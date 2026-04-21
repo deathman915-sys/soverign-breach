@@ -22,12 +22,12 @@ def process_npc_investigations(state: GameState, ticks: float):
             _scan_for_crimes(state, comp)
 
 def _scan_for_crimes(state: GameState, comp: Computer):
-    """NPCs scan the forensic (internal) logs for evidence of hacking."""
-    # 0.5% chance per tick to find a crime in internal_logs (once per ~200 ticks per server)
+    """NPCs scan the public logs for evidence of hacking."""
+    # 0.5% chance per tick to find a crime in logs (once per ~200 ticks per server)
     if random.random() > 0.005:
         return
 
-    for log_entry in comp.internal_logs:
+    for log_entry in comp.logs:
         if log_entry.suspicion_level >= 2 and not _is_already_traced(state, log_entry):
             # FOUND A CRIME! Start a passive trace from this node
             _start_investigation(state, comp.ip, log_entry)

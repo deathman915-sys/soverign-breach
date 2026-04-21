@@ -267,7 +267,16 @@ class GameEngine:
         # 6) Finance engine
         if tc % FINANCE_TICK_INTERVAL == 0:
             finance_engine.tick_stock_market(s)
-            finance_engine.accrue_interest(s, tc)
+            
+            # Loans & Defaults
+            fin_events = finance_engine.accrue_interest(s, tc)
+            for evt in fin_events:
+                self.events.emit("world_event", evt)
+                
+            # Offshore Fees
+            fee_events = finance_engine.process_offshore_fees(s, tc)
+            for evt in fee_events:
+                self.events.emit("world_event", evt)
 
         # 7) NPC engine
         if tc % NPC_TICK_INTERVAL == 0:

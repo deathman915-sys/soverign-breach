@@ -274,18 +274,13 @@ class GatewayState:
     heat: float = 25.0
     is_melted: bool = False
 
+    max_heat: float = 90.0
+    coolant_efficiency: float = 1.0
+
     @property
     def cpu_speed(self) -> int:
         """Combined speed of all active CPUs."""
         return sum(c.speed for c in self.cpus if getattr(c, "is_active", True))
-
-    max_heat: float = 90.0
-    coolant_efficiency: float = 1.0
-    is_melted: bool = False
-
-    @property
-    def cpu_speed(self) -> int:
-        return sum(c.speed for c in self.cpus) if self.cpus else 60
 
     @property
     def memory_size(self) -> int:
@@ -304,6 +299,8 @@ class PlayerState:
     uplink_rating: int = 1
     neuromancer_rating: int = 5
     credit_rating: int = 10
+    credit_score: int = 500  # NEW: 0 to 1000, affects loan limits
+    repossessions_sent: int = 0  # NEW: Permanent record of defaulted loans
     status: PersonStatus = PersonStatus.NONE
     is_arrested: bool = False
     jail_sentence_ticks: int = 0
@@ -490,6 +487,8 @@ class TransactionRecord:
     tick: int = 0
     from_ip: str = ""
     to_ip: str = ""
+    is_hot: bool = False  # NEW: True if source was a breached account
+    hot_ratio: float = 0.0  # NEW: 0.0 (clean) to 1.0 (pure theft)
 
 
 @dataclass
@@ -500,6 +499,8 @@ class BankAccount:
     balance: int = 0
     loan_amount: int = 0
     is_player: bool = False
+    is_offshore: bool = False  # NEW: Safe from seizure, but has fees
+    hot_ratio: float = 0.0  # NEW: Percentage of balance that is 'hot'
     account_number: str = ""
     transaction_log: list[TransactionRecord] = field(default_factory=list)
 
@@ -511,7 +512,9 @@ class LoanRecord:
     amount: int = 0
     interest_rate: float = 0.0
     created_at_tick: int = 0
+    due_at_tick: Optional[int] = None  # NEW: Repossession trigger
     is_paid: bool = False
+    is_defaulted: bool = False  # NEW: Triggers debt collection event
 
 
 @dataclass
@@ -690,6 +693,8 @@ class GameState:
     stock_holdings: list[StockHolding] = field(default_factory=list)
     next_account_id: int = 1
     next_loan_id: int = 1
+    # Financial Forensics
+    _hot_ratio: float = 0.0 # NEW: Global suspicion multiplier for player funds
 
     # Scheduled events
     scheduled_events: list[ScheduledEvent] = field(default_factory=list)
@@ -702,3 +707,4 @@ class GameState:
     @property
     def nodes(self) -> dict[str, Computer]:
         return self.computers
+

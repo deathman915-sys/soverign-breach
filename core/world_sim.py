@@ -77,10 +77,9 @@ class WorldSimulator:
         for comp in state.computers.values():
             # 1. Log Purge
             comp.logs = [
-                l for l in comp.logs 
-                if not l.is_deleted and (now - getattr(l, "tick_created", 0)) < LOG_EXPIRATION_TICKS
+                log_entry for log_entry in comp.logs
+                if not log_entry.is_deleted and (now - getattr(log_entry, "tick_created", 0)) < LOG_EXPIRATION_TICKS       
             ]
-
             # 2. Security Repair
             for sec in comp.security_systems:
                 if not sec.is_active or sec.is_bypassed:

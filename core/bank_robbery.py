@@ -84,9 +84,10 @@ def clear_robbery_logs(state: GameState) -> None:
     if not hasattr(state, "_robbery_timers"):
         return
 
-    cleared = []
-    for timer in list(state._robbery_timers):
+    remaining = []
+    for timer in state._robbery_timers:
         bank = state.computers.get(timer["bank_ip"])
+        is_cleared = False
         if bank:
             # Check if all transfer-related logs are deleted
             transfer_logs = [
@@ -94,12 +95,14 @@ def clear_robbery_logs(state: GameState) -> None:
                 for log_entry in bank.logs
                 if "transfer" in log_entry.subject.lower() or "transaction" in log_entry.subject.lower()
             ]
-            if all(log_entry.is_deleted for log_entry in transfer_logs):
-                cleared.append(timer)
+            if transfer_logs and all(log_entry.is_deleted for log_entry in transfer_logs):
+                is_cleared = True
                 log.info(f"Bank robbery timer cleared: {timer['bank_ip']}")
-
-    for timer in cleared:
-        state._robbery_timers.remove(timer)
+        
+        if not is_cleared:
+            remaining.append(timer)
+            
+    state._robbery_timers = remaining
 
 def get_active_robbery(state: GameState) -> dict | None:
     """Returns the most urgent robbery timer or None."""

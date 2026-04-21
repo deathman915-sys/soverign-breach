@@ -62,6 +62,12 @@ def escalate_suspicion(state: GameState, ticks: int) -> list[dict]:
             elif "routed" in log_entry.subject.lower():
                 multiplier = 0.5  # Connection logs escalate slower
 
+            # Financial Forensics Penalty:
+            # If player has 'hot' funds, everything escalates faster.
+            # Max penalty: 2x speed at 1.0 hot_ratio.
+            hot_penalty = 1.0 + getattr(state, "_hot_ratio", 0.0)
+            multiplier *= hot_penalty
+
             effective_ticks = ticks * multiplier
 
             # Calculate new suspicion level based on total suspicious ticks

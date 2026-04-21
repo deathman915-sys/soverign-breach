@@ -651,6 +651,8 @@ class TestBankForensicsWiring:
                     "transaction_log": [],
                     "owner_handle": "PLAYER",
                     "is_player": True,
+                    "hot_ratio": 0.0,
+                    "is_offshore": False,
                 },
             )()
         )
@@ -667,6 +669,8 @@ class TestBankForensicsWiring:
                     "transaction_log": [],
                     "owner_handle": "OTHER",
                     "is_player": False,
+                    "hot_ratio": 0.0,
+                    "is_offshore": False,
                 },
             )()
         )

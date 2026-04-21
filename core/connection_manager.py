@@ -237,15 +237,15 @@ def get_log_list(state: GameState) -> list[dict]:
     return [
         {
             "index": i,
-            "log_time": l.log_time,
-            "from_ip": l.from_ip,
-            "from_name": l.from_name,
-            "subject": l.subject,
-            "is_visible": l.is_visible,
-            "is_deleted": l.is_deleted,
+            "log_time": log_entry.log_time,
+            "from_ip": log_entry.from_ip,
+            "from_name": log_entry.from_name,
+            "subject": log_entry.subject,
+            "is_visible": log_entry.is_visible,
+            "is_deleted": log_entry.is_deleted,
         }
-        for i, l in enumerate(computer.logs)
-        if l.is_visible and not l.is_deleted
+        for i, log_entry in enumerate(computer.logs)
+        if log_entry.is_visible and not log_entry.is_deleted
     ]
 
 

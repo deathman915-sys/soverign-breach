@@ -31,8 +31,8 @@ class TestGameState:
     def test_default_state(self):
         s = GameState()
         assert s.player.handle == "AGENT"
-        # Sum of default CPUs: 10 + 10 = 20
-        assert s.gateway.cpu_speed == 20
+        # Sum of default CPUs: 60
+        assert s.gateway.cpu_speed == 60
         assert s.clock.tick_count == 0
         assert len(s.computers) == 0
         assert len(s.tasks) == 0
@@ -41,7 +41,7 @@ class TestGameState:
         s = GameState()
         s.vfs.files.append(VFSFile(id="test.dat", filename="test.dat", size_gq=5))
         assert s.vfs.used_gq == 5
-        assert s.vfs.free_gq == 59  # 64 - 5
+        assert s.vfs.free_gq == 19  # 24 - 5
 
     def test_nodes_backward_compat(self):
         """state.nodes should alias state.computers"""

@@ -248,10 +248,54 @@ def get_messages():
             "id": msg.id,
             "from": msg.from_name,
             "subject": msg.subject,
+            "body": msg.body,
+            "is_read": msg.is_read,
             "created_at_tick": msg.created_at_tick
         }
         for msg in engine.state.messages
     ]
+
+@eel.expose
+def mark_message_read(msg_id: int):
+    msg = next((m for m in engine.state.messages if m.id == msg_id), None)
+    if msg:
+        msg.is_read = True
+    return {"success": True}
+
+@eel.expose
+def get_missions():
+    from core.mission_engine import get_available_missions
+    return get_available_missions(engine.state)
+
+@eel.expose
+def get_active_missions():
+    from core.mission_engine import get_active_missions
+    return get_active_missions(engine.state)
+
+@eel.expose
+def get_news():
+    from core.news_engine import get_recent_news
+    return get_recent_news(engine.state)
+
+@eel.expose
+def get_bounce_chain():
+    return engine.state.bounce.hops
+
+@eel.expose
+def save_ip(ip: str):
+    if ip not in engine.state.player.known_ips:
+        engine.state.player.known_ips.append(ip)
+        from core import persistence
+        persistence.save_profile(engine.state)
+    return {"success": True}
+
+@eel.expose
+def toggle_tool(tool_id: str):
+    return get_rc().toggle_tool(tool_id)
+
+@eel.expose
+def toggle_remote_security(ip: str, sec_type: int):
+    return get_rc().toggle_remote_security(ip, sec_type)
 
 @eel.expose
 def set_speed(speed: int):
@@ -556,6 +600,17 @@ def on_game_over(reason):
         log.error(f"on_game_over failed: {e}", exc_info=True)
 
 engine.events.connect("game_over", on_game_over)
+
+def on_tasks_changed(data):
+    """Pushes task progress/completion updates to the UI."""
+    if hasattr(eel, "update_tasks"):
+        try:
+            eel.update_tasks(data)()
+        except Exception:
+            pass
+
+engine.events.connect("task_progress", on_tasks_changed)
+engine.events.connect("task_completed", on_tasks_changed)
 
 def start_game():
     engine.start()

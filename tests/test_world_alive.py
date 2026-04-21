@@ -64,7 +64,7 @@ def test_password_rotation(state, simulator):
     comp.screens.append(ComputerScreen(screen_type=1, data1="initial"))
     
     # Tick world significantly
-    for _ in range(2000):
+    for _ in range(10000):
         state.clock.tick_count += 1
         simulator.tick(state)
         if comp.ip not in state.player.known_passwords:

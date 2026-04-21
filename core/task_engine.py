@@ -295,6 +295,9 @@ def tick_task(state: GameState, task: RunningTask, speed: float) -> dict:
     if task.tool_name == "Password_Breaker":
         td, is_complete = _tick_password_breaker(td, speed, is_complete)
         task.target_data = json.dumps(td)
+    elif task.tool_name == "Dictionary_Hacker":
+        td, is_complete = _tick_dictionary_hacker(td, speed, is_complete)
+        task.target_data = json.dumps(td)
 
     if is_complete:
         if task.tool_name == "Password_Breaker":
@@ -378,6 +381,24 @@ def _tick_password_breaker(
     if is_complete:
         td["revealed"] = password
     return td, is_complete
+
+
+def _tick_dictionary_hacker(
+    td: dict, speed: float, would_complete: bool
+) -> tuple[dict, bool]:
+    # Visual feedback: random characters that reveal over time
+    password = td.get("password", "")
+    if not password:
+        return td, would_complete
+        
+    revealed = td.get("revealed", "")
+    if len(revealed) < len(password):
+        # Just show some random noise until completed
+        import string
+        noise = "".join(_random.choice(string.ascii_letters) for _ in range(len(password)))
+        td["revealed"] = noise
+        
+    return td, would_complete
 
 
 def _tick_trace_tracker(state: GameState, task: RunningTask, td: dict) -> dict:

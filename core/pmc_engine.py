@@ -6,7 +6,7 @@ Manages tactical squads, interceptions, and combat simulation.
 from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
-from core.game_state import GameState, TransportManifest, Company, PMCSquad, ManifestStatus
+from core.game_state import GameState, TransportManifest, PMCSquad, ManifestStatus
 
 if TYPE_CHECKING:
     from core.engine import EventEmitter

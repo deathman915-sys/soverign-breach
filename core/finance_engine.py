@@ -51,11 +51,28 @@ def get_player_accounts(state: GameState) -> list[dict]:
     ]
 
 
+def _sync_player_balance(state: GameState) -> None:
+    """Helper to keep state.player.balance as the sum of all player bank accounts."""
+    state.player.balance = sum(a.balance for a in state.bank_accounts if a.is_player)
+    _sync_player_hotness(state)
+
+
+def _sync_player_hotness(state: GameState) -> None:
+    """Calculates the weighted average hot_ratio of all player funds."""
+    total_balance = state.player.balance
+    if total_balance <= 0:
+        state._hot_ratio = 0.0
+        return
+    
+    total_hot_mass = sum(a.balance * a.hot_ratio for a in state.bank_accounts if a.is_player)
+    state._hot_ratio = total_hot_mass / total_balance
+
+
 def transfer_funds(
     state: GameState, from_account_id: int, to_account_id: int, amount: int
 ) -> dict:
     """Transfer funds between bank accounts."""
-    from core.bank_forensics import generate_transaction_hash
+    from core.bank_forensics import generate_transaction_hash, create_ghost_log
     from core.game_state import TransactionRecord
 
     from_acct = next((a for a in state.bank_accounts if a.id == from_account_id), None)
@@ -68,6 +85,28 @@ def transfer_funds(
     if from_acct.balance < amount:
         return {"success": False, "error": "Insufficient funds"}
 
+    # Laundering Logic: Calculate Hotness
+    # 1. Determine if this is a theft (from non-player account)
+    source_hotness = 1.0 if not from_acct.is_player else from_acct.hot_ratio
+    
+    # 2. Apply cleaning (Offshore/Bouncing)
+    cleaning_factor = 1.0
+    if to_acct.is_offshore:
+        cleaning_factor *= 0.5 # Offshore accounts are 50% effective at cleaning per transfer
+    
+    # Reduce hotness based on bounce length (max 50% reduction)
+    bounce_len = state.bounce.length
+    if bounce_len > 0:
+        reduction = min(0.5, bounce_len * 0.05)
+        cleaning_factor *= (1.0 - reduction)
+
+    applied_hotness = source_hotness * cleaning_factor
+
+    # 3. Blend with target account hotness
+    new_total_balance = to_acct.balance + amount
+    if new_total_balance > 0:
+        to_acct.hot_ratio = ((to_acct.balance * to_acct.hot_ratio) + (amount * applied_hotness)) / new_total_balance
+
     from_acct.balance -= amount
     to_acct.balance += amount
 
@@ -75,6 +114,11 @@ def transfer_funds(
     tx_hash = generate_transaction_hash(
         from_acct.account_number, to_acct.account_number, amount, state.clock.tick_count
     )
+    
+    # Create non-deletable ghost logs at both banks
+    create_ghost_log(state, from_acct.bank_ip, tx_hash, from_acct.account_number, to_acct.account_number, amount)
+    create_ghost_log(state, to_acct.bank_ip, tx_hash, from_acct.account_number, to_acct.account_number, amount)
+
     record = TransactionRecord(
         hash=tx_hash,
         amount=amount,
@@ -83,24 +127,24 @@ def transfer_funds(
         tick=state.clock.tick_count,
         from_ip=from_acct.bank_ip,
         to_ip=to_acct.bank_ip,
+        is_hot=(applied_hotness > 0.1),
+        hot_ratio=applied_hotness
     )
     from_acct.transaction_log.append(record)
     to_acct.transaction_log.append(record)
 
     # Update player balance if player account is involved
-    if from_acct.is_player:
-        state.player.balance = from_acct.balance
-    if to_acct.is_player:
-        state.player.balance = to_acct.balance
+    _sync_player_balance(state)
 
     log.info(
-        "Transfer: %d from acct %d to acct %d (Hash: %s)",
+        "Transfer: %d from acct %d to acct %d (Hash: %s, Hot: %.2f)",
         amount,
         from_account_id,
         to_account_id,
         tx_hash,
+        applied_hotness
     )
-    return {"success": True, "amount": amount, "transaction_hash": tx_hash}
+    return {"success": True, "amount": amount, "transaction_hash": tx_hash, "hot_ratio": applied_hotness}
 
 
 def open_account(state: GameState, bank_ip: str) -> dict:
@@ -145,6 +189,7 @@ def take_loan(state: GameState, bank_account_id: int, amount: int) -> dict:
         amount=amount,
         interest_rate=interest_rate,
         created_at_tick=state.clock.tick_count,
+        due_at_tick=state.clock.tick_count + 5000, # NEW: 5000 ticks to repay
     )
     state.next_loan_id += 1
     state.loans.append(loan)
@@ -179,11 +224,14 @@ def repay_loan(state: GameState, loan_id: int) -> dict:
     return {"success": True}
 
 
-def accrue_interest(state: GameState, current_tick: int) -> None:
-    """Accrue interest on all outstanding loans."""
+def accrue_interest(state: GameState, current_tick: int) -> list[dict]:
+    """Accrue interest on all outstanding loans and check for defaults."""
+    events = []
     for loan in state.loans:
         if loan.is_paid:
             continue
+        
+        # Interest accrual
         interest = int(loan.amount * loan.interest_rate / 100)  # Per-interval
         if interest > 0:
             loan.amount += interest
@@ -197,10 +245,68 @@ def accrue_interest(state: GameState, current_tick: int) -> None:
                     if l_entry.bank_account_id == acct.id and not l_entry.is_paid
                 )
 
+        # Check for default/repossession
+        if loan.due_at_tick is not None and current_tick > loan.due_at_tick and not loan.is_defaulted:
+            loan.is_defaulted = True
+            log.warning(f"LOAN DEFAULT: Account {loan.bank_account_id} defaulted on loan {loan.id}")
+            
+            repo_results = repossess_assets(state)
+            events.append({
+                "type": "loan_default",
+                "loan_id": loan.id,
+                "msg": f"Loan {loan.id} overdue. Assets repossessed.",
+                "details": repo_results
+            })
+            
+    return events
+
+
+def process_offshore_fees(state: GameState, current_tick: int) -> list[dict]:
+    """Apply maintenance fees to offshore accounts periodically."""
+    events = []
+    for acct in state.bank_accounts:
+        if acct.is_offshore and acct.balance > 0:
+            fee = max(1, int(acct.balance * 0.005)) # 0.5% fee per interval
+            acct.balance -= fee
+            events.append({
+                "type": "bank_fee",
+                "bank_ip": acct.bank_ip,
+                "amount": fee,
+                "msg": f"Offshore maintenance fee: {fee}c"
+            })
+    _sync_player_balance(state)
+    return events
+
+
+def repossess_assets(state: GameState) -> dict:
+    """The bank's automated 'debt collection' script. Deletes software from VFS."""
+    if not state.vfs.files:
+        return {"success": False, "msg": "No assets found to repossess."}
+    
+    # Logic: Delete the highest-version software first (most valuable)
+    # Filter for software type
+    software_files = [f for f in state.vfs.files if f.software_type.value > 0]
+    if not software_files:
+        # Fallback to data files if no software
+        software_files = state.vfs.files
+
+    software_files.sort(key=lambda f: f.version, reverse=True)
+    
+    deleted = []
+    # Delete up to 2 files as penalty
+    for _ in range(min(2, len(software_files))):
+        f_to_del = software_files.pop(0)
+        # Remove from main state
+        state.vfs.files = [f for f in state.vfs.files if f.id != f_to_del.id]
+        deleted.append(f_to_del.filename)
+    
+    log.info(f"REPOSSESSION: Deleted {deleted}")
+    return {"success": True, "deleted": deleted}
+
 
 # ======================================================================
 # Stock Market
-# ======================================================================
+# ===============================================================================
 def tick_stock_market(state: GameState) -> None:
     """Apply random walk to all company stock prices."""
     rng = random.Random()
