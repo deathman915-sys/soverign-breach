@@ -423,11 +423,25 @@ To ensure maximum fidelity and logic stability, we successfully built and perfec
 - **Sentinel Protocol (Automated Testing)**:
     - Built an **AST-based Parity Test** (`tests/test_eel_bridges.py`) that automatically detects unexposed functions or broken bridges.
     - Verified all logic with `tests/test_finance_advanced.py` and `tests/test_laundering.py`.
-    - **Total Test Count: 517 passed (100% Core Logic Pass Rate).**
+    -   **Total Test Count: 517 passed (100% Core Logic Pass Rate).**
 
----
+    ### Phase 23: The "Alive World" Milestone (The "Ecosystem" Expansion — April 21, 2026)
+    - **Rival Presence & Competition**:
+        - **Mission Life Expectancy**: Implemented `expiration_tick` for unaccepted missions. If the player hesitates, a random rival agent will "claim" the contract.
+        - **NPC Attribution**: Claims are attributed to specific rival agents, removing the mission from the BBS and generating a corresponding news article.
+    - **Visual Digital War (Map Blips)**:
+        - **Map Activity Engine**: Developed a stochastic event generator that emits brief "Map Blips" (source/target IP connections) representing NPC hacking activity.
+        - **Frontend Synchronization**: These events are pushed to the HUD, allowing for future real-time visual flickers of connection lines on the World Map.
+    - **Autonomous World Events**:
+        - **Corporate Mergers**: Implemented a background engine that occasionally merges two companies into a new conglomerate. This renames the entity, removes the acquired company, and automatically updates all associated servers world-wide.
+        - **Ambient Breaches**: The world now reports NPC-driven hacks on random servers, creating a sense of a larger, indifferent digital ecosystem.
+    - **TDD Verification**: 
+        - Created `tests/test_npc_competition.py`, `tests/test_npc_map_blips.py`, and `tests/test_autonomous_news.py`.
+        - **Total Test Count: 524 passed (100% Core Logic Pass Rate).**
 
-## 5. Technical Stack- **Language**: Python 3.12+ (Backend), JavaScript (Frontend)
+    ---
+
+    ## 5. Technical Stack- **Language**: Python 3.12+ (Backend), JavaScript (Frontend)
 - **Communication**: Eel (Python <-> JS Bridge)
 - **UI Framework**: HTML5 / CSS3 / Vanilla JS
 - **Visuals**: CSS Gradients, Box-Shadow Glows, HTML5 Canvas (Vector Map)

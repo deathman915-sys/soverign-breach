@@ -178,6 +178,29 @@ _TEMPLATES = {
         ],
         "category": "community",
     },
+    "corporate_merger": {
+        "headlines": [
+            "Market Shakeup: {company_a} and {company_b} announce merger",
+            "Mega-Corp Alert: {new_name} formed from high-profile merger",
+            "{company_a} acquired by rival {company_b} in hostile takeover",
+            "Consolidation Crisis: {new_name} dominates the {company_a} market sector",
+        ],
+        "bodies": [
+            (
+                "In a move that has shocked financial analysts, {company_a} and "
+                "{company_b} have confirmed their merger into the new conglomerate "
+                "'{new_name}'. Network administrators are currently synchronizing "
+                "internal server records across both corporate infrastructures."
+            ),
+            (
+                "The digital landscape has shifted following the formation of '{new_name}'. "
+                "The entity, born from the union of {company_a} and {company_b}, now "
+                "controls a significant portion of regional data traffic. Critics warn "
+                "of a growing monopoly in the tech sector."
+            ),
+        ],
+        "category": "corporate",
+    },
 }
 
 _AMBIENT_HEADLINES = [
@@ -330,15 +353,23 @@ def get_recent_news(state: GameState, count: int = 20) -> list[dict]:
         for n in sorted_news[:count]
     ]
 
-def _generate_ambient_article(state: GameState, current_tick: int, rng: random.Random) -> NewsItem:
-    headline = rng.choice(_AMBIENT_HEADLINES)
-    body = rng.choice(_AMBIENT_BODIES)
-
+def create_npc_mission_news(state: GameState, npc_name: str, mission_desc: str) -> NewsItem:
+    """Generate a news item reporting a rival agent's mission completion."""
+    templates = [
+        "Rival agent '{name}' successfully completes contract: {desc}",
+        "Global cyber-security alert: '{name}' linked to breach involving {desc}",
+        "Uplink BBS reports completion of high-priority task '{desc}' by agent {name}",
+        "Authorities confirm data breach: '{name}' is the primary suspect in {desc}"
+    ]
+    
+    headline = random.choice(templates).format(name=npc_name, desc=mission_desc)
     news = NewsItem(
         headline=headline,
-        body=body,
-        category="general",
-        tick_created=current_tick,
+        body=f"Reports are circulating within the underground that the agent known as '{npc_name}' "
+             f"has successfully fulfilled a high-stakes contract involving '{mission_desc}'. "
+             f"Public systems are adjusting to the ripple effects of this breach.",
+        category="criminal",
+        tick_created=state.clock.tick_count
     )
     state.world.news.append(news)
     return news

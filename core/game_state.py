@@ -456,6 +456,8 @@ class Mission:
     completion_e: Optional[str] = None
 
     is_accepted: bool = False
+    expiration_tick: Optional[int] = None  # NEW: Ticks until a rival takes the mission
+    claimed_by: Optional[str] = None      # NEW: Name of the NPC agent who completed it
     is_completed: bool = False
     accepted_by: Optional[str] = None
     created_at_tick: int = 0

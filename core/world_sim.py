@@ -53,6 +53,10 @@ class WorldSimulator:
         if tick % STOCK_TICK_INTERVAL == 0 and tick > 0:
             self._tick_stocks(state)
 
+        # World Events (Mergers, etc)
+        if tick % (NEWS_TICK_INTERVAL * 2) == 0 and tick > 0:
+            events.extend(self._tick_world_events(state))
+
         # Computer AI (Maintenance)
         if tick % COMPUTER_TICK_INTERVAL == 0 and tick > 0:
             self._tick_computers(state)
@@ -65,6 +69,103 @@ class WorldSimulator:
 
         # Process pending region restores
         events.extend(self._process_restores(state))
+
+        return events
+
+    # ------------------------------------------------------------------
+    # World Events (Mergers, Breaches)
+    # ------------------------------------------------------------------
+    def _tick_world_events(self, state: GameState) -> list[dict]:
+        """Generate world-altering events independent of the player."""
+        events = []
+        
+        # 1. Corporate Merger (0.5% chance per world tick cycle)
+        if random.random() < 0.005:
+            if len(state.world.companies) >= 2:
+                # Pick two companies to merge
+                c1, c2 = random.sample(state.world.companies, 2)
+                # Keep names for logging
+                old_name = c1.name
+                new_name = f"{c1.name}-{c2.name} Group"
+                
+                # Update Company State
+                c1.name = new_name
+                # Remove second company
+                state.world.companies = [c for c in state.world.companies if c.name != c2.name]
+                
+                # Update all servers belonging to either company
+                affected_count = 0
+                for comp in state.computers.values():
+                    if comp.company_name == old_name or comp.company_name == c2.name:
+                        comp.company_name = new_name
+                        affected_count += 1
+                
+                from core.news_engine import add_news
+                news = add_news(state, "corporate_merger", company_a=old_name, company_b=c2.name, new_name=new_name)
+                events.append({
+                    "type": "corporate_merger",
+                    "headline": news.headline if news else f"{old_name} and {c2.name} merge",
+                    "affected_servers": affected_count
+                })
+
+        # 2. Ambient Breaches (NPC driven)
+        if random.random() < 0.02:
+            target_ip = random.choice(list(state.computers.keys()))
+            comp = state.computers[target_ip]
+            if comp.computer_type != 4: # Don't report breaches on the gateway
+                from core.news_engine import add_news
+                news = add_news(state, "company_hack", company_name=comp.company_name)
+                if news:
+                    events.append({"type": "news", "headline": news.headline})
+
+        return events
+
+    # ------------------------------------------------------------------
+    # World Events (Mergers, Breaches)
+    # ------------------------------------------------------------------
+    def _tick_world_events(self, state: GameState) -> list[dict]:
+        """Generate world-altering events independent of the player."""
+        events = []
+        
+        # 1. Corporate Merger (0.5% chance per world tick cycle)
+        if random.random() < 0.005:
+            if len(state.world.companies) >= 2:
+                # Pick two companies to merge
+                c1, c2 = random.sample(state.world.companies, 2)
+                # Keep names for logging
+                old_name = c1.name
+                new_name = f"{c1.name}-{c2.name} Group"
+                
+                # Update Company State
+                c1.name = new_name
+                # Remove second company
+                state.world.companies = [c for c in state.world.companies if c.name != c2.name]
+                
+                # Update all servers belonging to either company
+                affected_count = 0
+                for comp in state.computers.values():
+                    if comp.company_name == old_name or comp.company_name == c2.name:
+                        comp.company_name = new_name
+                        affected_count += 1
+                
+                from core.news_engine import add_news
+                news = add_news(state, "corporate_merger", company_a=old_name, company_b=c2.name, new_name=new_name)
+                events.append({
+                    "type": "corporate_merger",
+                    "headline": news.headline if news else f"{old_name} and {c2.name} merge",
+                    "affected_servers": affected_count
+                })
+
+        # 2. Ambient Breaches (NPC driven)
+        if random.random() < 0.02:
+            if state.computers:
+                target_ip = random.choice(list(state.computers.keys()))
+                comp = state.computers[target_ip]
+                if comp.computer_type != 4: # Don't report breaches on the gateway
+                    from core.news_engine import add_news
+                    news = add_news(state, "company_hack", company_name=comp.company_name)
+                    if news:
+                        events.append({"type": "news", "headline": news.headline})
 
         return events
 
@@ -106,8 +207,49 @@ class WorldSimulator:
     # NPC agents
     # ------------------------------------------------------------------
     def _tick_npcs(self, state: GameState) -> list[dict]:
-        """NPCs attempt random hacking actions."""
+        """NPCs attempt random hacking actions and compete for missions."""
         events: list[dict] = []
+        now = state.clock.tick_count
+
+        # 1. Mission Competition: Check for expired unaccepted missions
+        from core.news_engine import create_npc_mission_news
+        
+        expired_ids = []
+        for mission in state.missions:
+            if not mission.is_accepted and mission.expiration_tick is not None:
+                if now >= mission.expiration_tick:
+                    # A rival takes it!
+                    rivals = [p for p in state.world.people if p.is_agent and not p.has_criminal_record]
+                    rival_name = random.choice(rivals).name if rivals else "A rival agent"
+                    
+                    mission.claimed_by = rival_name
+                    expired_ids.append(mission.id)
+                    
+                    # Generate news
+                    news = create_npc_mission_news(state, rival_name, mission.description)
+                    events.append({
+                        "type": "npc_claimed_mission",
+                        "npc_name": rival_name,
+                        "mission_id": mission.id,
+                        "headline": news.headline if news else f"Rival agent {rival_name} completes contract"
+                    })
+
+        # Remove claimed missions from the BBS pool
+        state.missions = [m for m in state.missions if m.id not in expired_ids]
+
+        # 2. Map Blips: Occasional visible rival activity
+        if random.random() < 0.3: # 30% chance per NPC tick to see a blip
+            ips = list(state.computers.keys())
+            if len(ips) >= 2:
+                src, dst = random.sample(ips, 2)
+                events.append({
+                    "type": "npc_map_blip",
+                    "source_ip": src,
+                    "target_ip": dst,
+                    "duration": 5 # 1 second at 5Hz
+                })
+
+        # 3. Random NPC Actions (Standard logic)
         for npc in state.world.people:
             if not npc.is_agent or npc.has_criminal_record:
                 continue
