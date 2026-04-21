@@ -22,130 +22,133 @@ class ScreenHTMLBuilder:
     @staticmethod
     def build_menu_html(title: str, options: list[dict]) -> str:
         items = "".join(
-            f'<button class="menu-btn" style="text-align:left;" onclick="remoteNavigate({opt["screen_type"]})">{escape(opt["name"])}</button>'
+            f'<button class="menu-btn" style="text-align:left; padding:10px 15px; font-size:11px; letter-spacing:1px;" '
+            f'onclick="remoteNavigate({opt["screen_type"]})">{escape(opt["name"].upper())}</button>'
             for opt in options
         )
         return (
-            f'<div style="padding:20px;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:14px;">{escape(title)}</div>'
-            f'<div style="display:flex; flex-direction:column; gap:5px;">{items}</div>'
-            f'</div>'
+            f'<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:600px; display:flex; flex-direction:column; gap:8px;">'
+            f'{items}</div></div>'
         )
 
     @staticmethod
     def build_password_html(title: str, hint: str) -> str:
         return (
-            f'<div style="padding:40px; text-align:center;">'
-            f'<div style="color:var(--red); font-weight:bold;">PASSWORD REQUIRED</div>'
-            f'<div style="color:#444; font-size:9px; margin-top:10px;">{escape(hint) if hint else ""}</div>'
-            f'</div>'
+            f'<div style="padding:100px 20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="text-align:center;">'
+            f'<div style="color:var(--red); font-weight:bold; font-size:14px; letter-spacing:2px; margin-bottom:10px;">PASSWORD REQUIRED</div>'
+            f'<div style="color:var(--text-dim); font-size:9px;">{escape(hint) if hint else "ENCRYPTION KEY MISMATCH"}</div>'
+            f'</div></div>'
         )
 
     @staticmethod
     def build_file_server_html(files: list[dict]) -> str:
         if not files:
             return (
-                '<div style="padding:15px; overflow-y:auto; height:100%;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">FILE SERVER</div>'
-                '<div style="color:#333; text-align:center;">No files</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No files available</div></div>'
             )
         items = "".join(
-            f'<div style="border:1px solid #222; padding:8px; margin-bottom:4px; '
+            f'<div style="border:1px solid #222; padding:10px; margin-bottom:6px; background:rgba(0,0,0,0.3); '
             f'display:flex; justify-content:space-between; align-items:center;">'
-            f'<div><span style="color:#fff;">{escape(f["name"])}</span> '
-            f'<span style="color:#444; font-size:9px;">({f["size"]}GQ)</span></div>'
-            f'<div style="display:flex; gap:4px;">'
-            f'<button class="menu-btn" style="font-size:9px;" '
+            f'<div><span style="color:#fff; font-size:11px;">{escape(f["name"])}</span> '
+            f'<span style="color:var(--text-dim); font-size:9px;">({f["size"]}GQ)</span></div>'
+            f'<div style="display:flex; gap:8px;">'
+            f'<button class="menu-btn" style="font-size:9px; padding:4px 10px;" '
             f'onclick="serverCopyFile(\'{escape(f["name"])}\')">COPY</button>'
-            f'<button class="menu-btn" style="font-size:9px; background:#300; '
+            f'<button class="menu-btn" style="font-size:9px; background:#300; padding:4px 10px; '
             f'color:#a55;" onclick="serverDeleteFile(\'{escape(f["name"])}\')">DEL</button>'
             f'</div></div>'
             for f in files
         )
         return (
-            f'<div style="padding:15px; overflow-y:auto; height:100%;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">FILE SERVER</div>'
-            f'{items}</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">FILE SERVER</div>'
+            f'{items}</div></div>'
         )
 
     @staticmethod
     def build_logs_html(logs: list[dict]) -> str:
         if not logs:
             return (
-                '<div style="padding:15px;">'
-                '<div style="color:var(--yellow); font-weight:bold; margin-bottom:10px;">LOGS</div>'
-                '<div style="color:#333; text-align:center;">Empty</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'Log buffer empty</div></div>'
             )
         items = "".join(
             f'<div style="display:flex; justify-content:space-between; align-items:center; '
-            f'font-family:monospace; font-size:9px; border-bottom:1px solid #111; padding:4px 0;">'
+            f'font-family:monospace; font-size:9px; border-bottom:1px solid #111; padding:6px 0;">'
             f'<span style="color:var(--red);">{escape(log_entry["subject"])}'
             f'{"" if not log_entry.get("modified") else " <span style=\\\"color:var(--orange); font-size:8px;\\\">[MODIFIED]</span>"}'
             f'</span>'
             f'<span style="color:var(--cyan); cursor:pointer;" '
             f'onclick="interactWithIP(\'{escape(log_entry["from"])}\')">{escape(log_entry["from"])}</span>'
-            f'<span style="color:#666;">{escape(log_entry["time"])}</span>'
-            f'<button class="menu-btn" style="font-size:7px; padding:1px 4px;" '
+            f'<span style="color:var(--text-dim);">{escape(log_entry["time"])}</span>'
+            f'<button class="menu-btn" style="font-size:7px; padding:2px 6px;" '
             f'onclick="modifyLogPrompt({log_entry["index"]})">MODIFY</button>'
             f'</div>'
             for log_entry in logs
         )
-        # Serialize logs for JS access
         logs_json = json.dumps(logs)
         return (
-            f'<div style="padding:15px;">'
-            f'<div style="color:var(--yellow); font-weight:bold; margin-bottom:10px;">LOGS</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--yellow); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">ACCESS LOGS</div>'
             f'{items}</div>'
-            f'<script>window._logData = {logs_json};</script>'
+            f'<script>window._logData = {logs_json};</script></div>'
         )
 
     @staticmethod
     def build_bbs_html(missions: list[dict]) -> str:
         if not missions:
             return (
-                '<div style="padding:15px; overflow-y:auto; height:100%;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">MISSION BBS</div>'
-                '<div style="color:#333; text-align:center;">No missions available</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No public contracts available</div></div>'
             )
         items = "".join(
-            f'<div style="border:1px solid #222; padding:10px; margin-bottom:5px; '
+            f'<div style="border:1px solid #222; padding:15px; margin-bottom:8px; background:rgba(0,0,0,0.3); '
             f'display:flex; justify-content:space-between; align-items:center;">'
-            f'<div><div style="color:#fff;">{escape(m.get("employer", m.get("type", "")))}: '
-            f'{escape(m.get("description", ""))}</div>'
-            f'<div style="color:var(--green); font-size:9px;">Payment: {m.get("payment", "?")}c</div></div>'
-            f'<div style="display:flex; gap:4px;">'
-            f'<button class="menu-btn" style="font-size:9px;" '
+            f'<div><div style="color:#fff; font-size:11px; font-weight:bold; margin-bottom:4px;">{escape(m.get("employer", m.get("type", "")))}</div>'
+            f'<div style="color:var(--text-dim); font-size:9px; line-height:1.2;">{escape(m.get("description", ""))}</div>'
+            f'<div style="color:var(--green); font-size:10px; margin-top:8px; font-family:monospace;">{m.get("payment", 0):,}c</div></div>'
+            f'<div style="display:flex; flex-direction:column; gap:6px;">'
+            f'<button class="menu-btn" style="font-size:9px; padding:6px 12px;" '
             f'onclick="serverAcceptMission({m["id"]})">ACCEPT</button>'
-            f'<button class="menu-btn" style="font-size:9px; background:#222;" '
+            f'<button class="menu-btn" style="font-size:9px; background:#222; padding:6px 12px;" '
             f'onclick="serverNegotiateMission({m["id"]})">NEGOTIATE</button>'
             f'</div></div>'
             for m in missions
         )
         return (
-            f'<div style="padding:15px; overflow-y:auto; height:100%;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">MISSION BBS</div>'
-            f'{items}</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">PUBLIC MISSION BBS</div>'
+            f'{items}</div></div>'
         )
 
     @staticmethod
     def build_links_html(links: list[str | dict]) -> str:
         if not links:
             return (
-                '<div style="padding:15px;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">LINKS</div>'
-                '<div style="color:#333; text-align:center;">Empty</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No outbound links identified</div></div>'
             )
-        items = ""
-        for link in links:
-            ip = link if isinstance(link, str) else link.get("ip", link.get("name", ""))
-            items += (
-                f'<div style="color:var(--cyan); cursor:pointer;" '
-                f'onclick="interactWithIP(\'{escape(ip)}\')">{escape(ip)}</div>'
-            )
+        items = "".join(
+            f'<div class="user-name" style="color:var(--cyan); cursor:pointer; margin-bottom:6px; font-size:11px; padding:4px 8px; border-bottom:1px solid #111;" '
+            f'onclick="interactWithIP(\'{escape(link if isinstance(link, str) else link.get("ip", ""))}\')">'
+            f'{escape(link if isinstance(link, str) else link.get("ip", link.get("name", "")))}</div>'
+            for link in links
+        )
         return (
-            f'<div style="padding:15px;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">LINKS</div>'
-            f'{items}</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:600px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">NETWORK LINKS</div>'
+            f'{items}</div></div>'
         )
 
     @staticmethod
@@ -156,26 +159,27 @@ class ScreenHTMLBuilder:
     def build_software_sales_html(items: list[dict]) -> str:
         if not items:
             return (
-                '<div style="padding:15px; overflow-y:auto; height:100%;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">SOFTWARE UPGRADES</div>'
-                '<div style="color:#333; text-align:center;">No software available</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No software available</div></div>'
             )
         cards = "".join(
-            f'<div style="border:1px solid #222; padding:8px; margin-bottom:4px; '
+            f'<div style="border:1px solid #222; padding:12px; margin-bottom:6px; background:rgba(0,0,0,0.3); '
             f'display:flex; justify-content:space-between; align-items:center;">'
-            f'<div><div style="color:#fff; font-size:10px;">{escape(item["name"])} v{item.get("version", 1)}</div>'
-            f'<div style="color:#444; font-size:9px;">Size: {item.get("size", "?")}GQ</div></div>'
-            f'<div style="display:flex; gap:6px; align-items:center;">'
-            f'<span style="color:var(--green); font-size:10px;">{item["price"]}c</span>'
-            f'<button class="menu-btn" style="font-size:9px;" '
+            f'<div><div style="color:#fff; font-size:11px; font-weight:bold;">{escape(item["name"])} v{item.get("version", 1)}</div>'
+            f'<div style="color:var(--text-dim); font-size:9px;">Size: {item.get("size", "?")}GQ</div></div>'
+            f'<div style="display:flex; gap:12px; align-items:center;">'
+            f'<span style="color:var(--green); font-size:11px; font-family:monospace;">{item["price"]}c</span>'
+            f'<button class="menu-btn" style="font-size:9px; padding:5px 12px;" '
             f'onclick="serverBuySoftware(\'{escape(item["name"])}\',{item.get("version", 1)})">BUY</button>'
             f'</div></div>'
             for item in items
         )
         return (
-            f'<div style="padding:15px; overflow-y:auto; height:100%;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">SOFTWARE UPGRADES</div>'
-            f'{cards}</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">SOFTWARE UPGRADES</div>'
+            f'{cards}</div></div>'
         )
 
     @staticmethod
@@ -184,136 +188,141 @@ class ScreenHTMLBuilder:
 
         if gateways:
             items = "".join(
-                f'<div style="border:1px solid #222; padding:8px; margin-bottom:4px; '
+                f'<div style="border:1px solid #222; padding:10px; margin-bottom:6px; background:rgba(0,170,255,0.05); '
                 f'display:flex; justify-content:space-between; align-items:center;">'
-                f'<div style="color:#fff; font-size:10px;">{escape(g["name"])}</div>'
-                f'<div style="display:flex; gap:6px; align-items:center;">'
-                f'<span style="color:var(--green); font-size:10px;">{g["price"]}c</span>'
-                f'<button class="menu-btn" style="font-size:9px;" '
+                f'<div style="color:#fff; font-size:11px; font-weight:bold;">{escape(g["name"])}</div>'
+                f'<div style="display:flex; gap:12px; align-items:center;">'
+                f'<span style="color:var(--green); font-size:11px; font-family:monospace;">{g["price"]}c</span>'
+                f'<button class="menu-btn" style="font-size:9px; padding:5px 12px;" '
                 f'onclick="serverBuyGateway(\'{escape(g["name"])}\')">BUY</button>'
                 f'</div></div>'
                 for g in gateways
             )
-            sections.append(f'<div style="color:var(--yellow); font-size:10px; margin-bottom:8px;">GATEWAYS</div>{items}')
+            sections.append(f'<div style="color:var(--yellow); font-size:10px; font-weight:bold; margin-bottom:10px; letter-spacing:1px;">GATEWAYS</div>{items}')
 
         if cooling:
             items = "".join(
-                f'<div style="border:1px solid #222; padding:8px; margin-bottom:4px; '
+                f'<div style="border:1px solid #222; padding:10px; margin-bottom:6px; background:rgba(0,0,0,0.3); '
                 f'display:flex; justify-content:space-between; align-items:center;">'
-                f'<div style="color:#fff; font-size:10px;">{escape(c["name"])}</div>'
-                f'<div style="display:flex; gap:6px; align-items:center;">'
-                f'<span style="color:var(--green); font-size:10px;">{c["price"]}c</span>'
-                f'<button class="menu-btn" style="font-size:9px;" '
+                f'<div style="color:#fff; font-size:11px;">{escape(c["name"])}</div>'
+                f'<div style="display:flex; gap:12px; align-items:center;">'
+                f'<span style="color:var(--green); font-size:11px;">{c["price"]}c</span>'
+                f'<button class="menu-btn" style="font-size:9px; padding:5px 12px;" '
                 f'onclick="serverBuyCooling(\'{escape(c["name"])}\')">BUY</button>'
                 f'</div></div>'
                 for c in cooling
             )
-            sections.append(f'<div style="color:var(--yellow); font-size:10px; margin:12px 0 8px;">COOLING SYSTEMS</div>{items}')
+            sections.append(f'<div style="color:var(--yellow); font-size:10px; font-weight:bold; margin:15px 0 10px; letter-spacing:1px;">COOLING SYSTEMS</div>{items}')
 
         if psu:
             items = "".join(
-                f'<div style="border:1px solid #222; padding:8px; margin-bottom:4px; '
+                f'<div style="border:1px solid #222; padding:10px; margin-bottom:6px; background:rgba(0,0,0,0.3); '
                 f'display:flex; justify-content:space-between; align-items:center;">'
-                f'<div style="color:#fff; font-size:10px;">{escape(p["name"])}</div>'
-                f'<div style="display:flex; gap:6px; align-items:center;">'
-                f'<span style="color:var(--green); font-size:10px;">{p["price"]}c</span>'
-                f'<button class="menu-btn" style="font-size:9px;" '
+                f'<div style="color:#fff; font-size:11px;">{escape(p["name"])}</div>'
+                f'<div style="display:flex; gap:12px; align-items:center;">'
+                f'<span style="color:var(--green); font-size:11px;">{p["price"]}c</span>'
+                f'<button class="menu-btn" style="font-size:9px; padding:5px 12px;" '
                 f'onclick="serverBuyPSU(\'{escape(p["name"])}\')">BUY</button>'
                 f'</div></div>'
                 for p in psu
             )
-            sections.append(f'<div style="color:var(--yellow); font-size:10px; margin:12px 0 8px;">POWER SUPPLIES</div>{items}')
+            sections.append(f'<div style="color:var(--yellow); font-size:10px; font-weight:bold; margin:15px 0 10px; letter-spacing:1px;">POWER SUPPLIES</div>{items}')
 
         if addons:
             items = "".join(
-                f'<div style="border:1px solid #222; padding:8px; margin-bottom:4px; '
+                f'<div style="border:1px solid #222; padding:10px; margin-bottom:6px; background:rgba(255,170,0,0.05); '
                 f'display:flex; justify-content:space-between; align-items:center;">'
-                f'<div style="color:#fff; font-size:10px;">{escape(a["name"])}</div>'
-                f'<div style="display:flex; gap:6px; align-items:center;">'
-                f'<span style="color:var(--green); font-size:10px;">{a["price"]}c</span>'
-                f'<button class="menu-btn" style="font-size:9px;" '
+                f'<div style="color:#fff; font-size:11px;">{escape(a["name"])}</div>'
+                f'<div style="display:flex; gap:12px; align-items:center;">'
+                f'<span style="color:var(--green); font-size:11px;">{a["price"]}c</span>'
+                f'<button class="menu-btn" style="font-size:9px; padding:5px 12px;" '
                 f'onclick="serverBuyAddon(\'{escape(a["name"])}\')">BUY</button>'
                 f'</div></div>'
                 for a in addons
             )
-            sections.append(f'<div style="color:var(--yellow); font-size:10px; margin:12px 0 8px;">ADDONS</div>{items}')
+            sections.append(f'<div style="color:var(--yellow); font-size:10px; font-weight:bold; margin:15px 0 10px; letter-spacing:1px;">ADDONS</div>{items}')
 
         if not sections:
             return (
-                '<div style="padding:15px; overflow-y:auto; height:100%;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">HARDWARE UPGRADES</div>'
-                '<div style="color:#333; text-align:center;">No hardware available</div></div>'
+                f'<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                f'<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                f'No hardware available</div></div>'
             )
 
+        content = "".join(sections)
         return (
-            f'<div style="padding:15px; overflow-y:auto; height:100%;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">HARDWARE UPGRADES</div>'
-            f'{"".join(sections)}</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">HARDWARE UPGRADES</div>'
+            f'{content}</div></div>'
         )
 
     @staticmethod
     def build_news_html(articles: list[dict]) -> str:
         if not articles:
             return (
-                '<div style="padding:15px; overflow-y:auto; height:100%;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">NEWS FEED</div>'
-                '<div style="color:#333; text-align:center;">No news articles</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No news articles archived</div></div>'
             )
         items = "".join(
-            f'<div style="border:1px solid #222; padding:10px; margin-bottom:8px;">'
-            f'<div style="color:#fff; font-size:11px; margin-bottom:4px;">{escape(a["headline"])}</div>'
-            f'<div style="color:#444; font-size:9px; margin-bottom:6px;">Category: '
-            f'{escape(a.get("category", "General"))} | Tick: {a.get("tick", "?")}</div>'
-            f'<div style="color:#888; font-size:10px; line-height:1.4;">'
+            f'<div style="border:1px solid #222; padding:12px; margin-bottom:8px; background:rgba(0,0,0,0.3);">'
+            f'<div style="color:#fff; font-size:11px; font-weight:bold; margin-bottom:4px; letter-spacing:0.5px;">{escape(a["headline"])}</div>'
+            f'<div style="color:var(--text-dim); font-size:9px; margin-bottom:8px; border-bottom:1px solid #111; padding-bottom:4px;">'
+            f'Category: {escape(a.get("category", "General")).upper()} | Timestamp: {a.get("tick", "?")}</div>'
+            f'<div style="color:#aaa; font-size:10px; line-height:1.4;">'
             f'{escape(a.get("body", ""))}</div>'
             f'</div>'
             for a in articles
         )
         return (
-            f'<div style="padding:15px; overflow-y:auto; height:100%;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">NEWS FEED</div>'
-            f'{items}</div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">GLOBAL NEWS ARCHIVE</div>'
+            f'{items}</div></div>'
         )
 
     @staticmethod
     def build_rankings_html(rankings: list[dict]) -> str:
         if not rankings:
             return (
-                '<div style="padding:15px; overflow-y:auto; height:100%;">'
-                '<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">RANKINGS</div>'
-                '<div style="color:#333; text-align:center;">No rankings available</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'Ranking database unavailable</div></div>'
             )
         items = "".join(
-            f'<div style="border:1px solid #222; padding:8px; display:flex; '
-            f'justify-content:space-between; align-items:center;">'
-            f'<div style="display:flex; align-items:center; gap:10px;">'
-            f'<span style="color:var(--yellow); font-weight:bold; min-width:30px;">#{i+1}</span>'
-            f'<span style="color:#fff;">{escape(r.get("name", r.get("handle", "?")))}</span>'
+            f'<div style="border:1px solid #222; padding:10px; margin-bottom:4px; display:flex; '
+            f'justify-content:space-between; align-items:center; background:rgba(0,170,255,0.03);">'
+            f'<div style="display:flex; align-items:center; gap:15px;">'
+            f'<span style="color:var(--yellow); font-weight:bold; font-family:monospace; min-width:30px;">#{i+1}</span>'
+            f'<span style="color:#fff; font-size:11px;">{escape(r.get("name", r.get("handle", "?")).upper())}</span>'
             f'</div>'
-            f'<div style="color:var(--green); font-size:10px;">Rating: {r.get("rating", 0)}</div>'
+            f'<div style="color:var(--green); font-size:10px; font-family:monospace;">RATING: {r.get("rating", 0)}</div>'
             f'</div>'
             for i, r in enumerate(rankings)
         )
         return (
-            f'<div style="padding:15px; overflow-y:auto; height:100%;">'
-            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">RANKINGS</div>'
-            f'<div style="display:flex; flex-direction:column; gap:4px;">{items}</div></div>'
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">AGENT RANKINGS</div>'
+            f'<div style="display:flex; flex-direction:column; gap:4px;">{items}</div></div></div>'
         )
 
     @staticmethod
     def build_company_info_html(data: dict) -> str:
         vehicles = data.get("vehicles", [])
         return (
-            f'<div style="padding:15px; height:100%; display:flex; flex-direction:column;">'
-            f'<div style="color:var(--cyan); font-weight:bold; font-size:14px; margin-bottom:5px;">'
-            f'{escape(data.get("title", data.get("name", "COMPANY INFO")))}</div>'
-            f'<div style="font-size:9px; color:#666; margin-bottom:15px;">TYPE: '
-            f'{escape(data.get("company_type", "Unknown"))} | STOCK: {data.get("stock_price", "N/A")}</div>'
-            f'<div style="border-top:1px solid #111; padding-top:10px; flex:1;">'
-            f'{f"<div style=\\\"color:#888; font-size:10px; margin-bottom:8px;\\\">Owner: {escape(data.get("owner", ""))}</div>" if data.get("owner") else ""}'
-            f'{f"<div style=\\\"color:#888; font-size:10px; margin-bottom:8px;\\\">Size: {data.get("size", 0)} employees</div>" if data.get("size") else ""}'
-            f'{f"<div style=\\\"color:var(--green); font-size:10px;\\\">Fleet: {len(vehicles)} active vehicles</div>" if vehicles else "<div style=\\\"color:#444; font-size:9px;\\\">No active assets</div>"}'
-            f'</div></div>'
+            f'<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+            f'<div style="width:100%; max-width:600px; border:1px solid #222; background:rgba(0,10,20,0.4); padding:25px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; font-size:16px; margin-bottom:5px; letter-spacing:1px;">'
+            f'{escape(data.get("title", data.get("name", "COMPANY INFO")).upper())}</div>'
+            f'<div style="font-size:10px; color:var(--text-dim); margin-bottom:20px; border-bottom:1px solid #111; padding-bottom:8px;">'
+            f'TYPE: {escape(data.get("company_type", "Unknown")).upper()} | STOCK: <span style="color:var(--green);">{data.get("stock_price", "N/A")}c</span></div>'
+            f'<div style="display:flex; flex-direction:column; gap:10px;">'
+            f'{f"<div style=\\\"display:flex; justify-content:space-between;\\\"><span style=\\\"color:var(--text-dim); font-size:10px;\\\">OWNER</span><span style=\\\"color:#fff; font-size:10px;\\\">{escape(data.get("owner", ""))}</span></div>" if data.get("owner") else ""}'
+            f'{f"<div style=\\\"display:flex; justify-content:space-between;\\\"><span style=\\\"color:var(--text-dim); font-size:10px;\\\">EMPLOYEES</span><span style=\\\"color:#fff; font-size:10px;\\\">{data.get("size", 0):,}</span></div>" if data.get("size") else ""}'
+            f'{f"<div style=\\\"display:flex; justify-content:space-between;\\\"><span style=\\\"color:var(--text-dim); font-size:10px;\\\">FLEET STATUS</span><span style=\\\"color:var(--green); font-size:10px;\\\">{len(vehicles)} ACTIVE ASSETS</span></div>" if vehicles else "<div style=\\\"display:flex; justify-content:space-between;\\\"><span style=\\\"color:var(--text-dim); font-size:10px;\\\">FLEET STATUS</span><span style=\\\"color:var(--text-dim); font-size:10px;\\\">NO ACTIVE ASSETS</span></div>"}'
+            f'</div></div></div>'
         )
 
     @staticmethod
