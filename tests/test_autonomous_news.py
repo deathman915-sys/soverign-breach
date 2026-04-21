@@ -19,7 +19,6 @@ def test_corporate_merger_updates_state(state):
     
     # 2. Trigger world events logic (0.005 chance, so let's mock random)
     import unittest
-    import unittest.mock as mock
     with unittest.mock.patch('random.random', return_value=0.0): # Force merger
         with unittest.mock.patch('random.sample', return_value=[state.world.companies[0], state.world.companies[1]]):
             events = simulator._tick_world_events(state)

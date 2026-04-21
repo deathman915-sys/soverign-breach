@@ -9,14 +9,19 @@ Built on a resilient **Eel/JavaScript** core with a multi-threaded **Python 3.12
 ## 🚀 Key Engineering Milestones (67% Source Parity)
 
 - **Living Network Engine:** Servers feature Log Expiration, Password Rotation, and Security Self-Repair.
+- **The "Alive World" Ecosystem:**
+    - **NPC Competition:** Rival agents claim missions and trigger procedural news articles.
+    - **Digital War:** Stochastic map blips represent invisible rival hacking connections.
+    - **Geopolitical Shifts:** Companies merge and borders shift based on background simulation events.
+- **High-Fidelity "Elastic" HUD:**
+    - **Dynamic Resizability:** All windows are resizable with centered, tactical layouts that scale to 4K displays.
+    - **Topographical Singularity:** The World Map defaults to a single, centered infinite-black viewport.
 - **Advanced Financial Forensics:**
-    - **Hot Credits:** Stolen funds carry high suspicion ratios that increase global alert levels.
+    - **Hot Credits:** Stolen funds carry high suspicion ratios that pulse in the HUD and escalate alert levels.
     - **Laundering:** Clean "hot" money through **Offshore Accounts** or multi-hop connection bounces.
     - **Ghost Logs:** Transactions leave permanent forensic signatures in bank internal backups.
     - **Asset Repossession:** Banks employ automated scripts to delete your gateway software if loans default.
-- **Modular Hardware Simulation:** Manage thermals (Heatsinks), power draw (PSUs), and overclocking for each individual CPU core.
-- **Record Manipulation:** Full implementation of Academic, Criminal, and Social record editing for high-stakes framing missions.
-- **Modern Developer Toolkit:** Native integration with `rg`, `ruff`, `uv`, and `jq` for advanced codebase management.
+- **Modern Developer Toolkit:** Native integration with `rg`, `ruff`, `uv`, `just`, `btm`, and `jq`.
 
 ---
 
@@ -26,7 +31,7 @@ Built on a resilient **Eel/JavaScript** core with a multi-threaded **Python 3.12
 - **Frontend:** Eel (Chrome/Edge backend), JavaScript, Leaflet.js (Map), Chiptune2.js (Tracker Music)
 - **Database:** Stateless JSON Profile persistence with AST-based integrity validation.
 - **Linter:** Ruff (100% compliance achieved).
-- **Test Suite:** 520+ Automated Pytest cases (100% Core Logic Pass Rate).
+- **Test Suite:** 530+ Automated Pytest cases (100% Core Logic Pass Rate).
 
 ---
 
@@ -36,6 +41,7 @@ Built on a resilient **Eel/JavaScript** core with a multi-threaded **Python 3.12
 - Python 3.10+
 - A modern web browser (Edge/Chrome)
 - `uv` (Recommended) or `pip`
+- `just` (Command runner)
 
 ### 2. Installation
 ```bash
@@ -50,6 +56,8 @@ uv pip install -r requirements.txt
 
 ### 3. Execution
 ```bash
+just run
+# or
 python web_main.py
 ```
 
@@ -59,7 +67,7 @@ python web_main.py
 This project recently completed a **100% Logic Audit**, resolving:
 - CRITICAL forensic scanning gaps (Internal Log desync).
 - HIGH bank robbery timer leaks.
-- MEDIUM UI/Simulation visual desynchronization.
+- UI Scalability (The "Great Migration" of renderers to Python).
 - Frontend parity (All Eel bridges verified by AST analysis).
 
 ---

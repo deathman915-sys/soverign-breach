@@ -16,6 +16,8 @@ let bouncePolyline = null;
 let mapSelectedNode = null;
 let dragTarget = null, dragOffX = 0, dragOffY = 0;
 let audioCtx = null;
+let borderLayer = null; // Phase 23: GeoJSON borders
+let activeNPCLines = []; // Phase 23: Visible blips
 
 function setBackground(src) {
     const desktop = document.getElementById('desktop');
@@ -552,8 +554,6 @@ function renderApp(appId, data) {
         case 'terminal': renderTerminal(container, data); break;
         case 'memory_banks': renderMemoryBanks(container, data); break;
         case 'tutorial': renderTutorial(container, data); break;
-        case 'news': renderNews(container, data); break;
-        case 'rankings': renderRankings(container, data); break;
     }
 }
 
@@ -859,11 +859,19 @@ function update_tasks(tasks) { if (!gameState) return; ['hardware','remote','mem
 
 eel.expose(trigger_event);
 function trigger_event(evt) {
-    if(evt.type==="forensics_update") showNotification(`Investigator reached ${evt.node}`, "warning"); else if(evt.type==="forensics_lost") showNotification("Trail broken", "info");
-    else if(evt.type==="arrest") { showArrestOverlay(evt); MusicManager.play('death'); } else if(evt.type==="disavowed") { showDisavowedOverlay(evt); MusicManager.play('death'); } 
+    if (evt.type === 'npc_map_blip') {
+        drawNPCBlip(evt.source_ip, evt.target_ip, evt.duration);
+    } else if (evt.type === 'conflict_shift') {
+        showNotification(evt.msg, "warning");
+        refreshBorders();
+    } else if(evt.type==="forensics_update") showNotification(`Investigator reached ${evt.node}`, "warning"); 
+    else if(evt.type==="forensics_lost") showNotification("Trail broken", "info");
+    else if(evt.type==="arrest") { showArrestOverlay(evt); MusicManager.play('death'); } 
+    else if(evt.type==="disavowed") { showDisavowedOverlay(evt); MusicManager.play('death'); } 
     else if(evt.type==="profile_deleted") { alert("PROFILE DELETED"); location.reload(); }
     else if(evt.type==="released") { document.getElementById('arrest-overlay')?.remove(); showNotification("Released", "info"); MusicManager.play('default'); } 
-    else if(evt.type==="disavow_countdown") showNotification(`DISAVOWED: ${evt.ticks_left} ticks`, "critical"); else if(evt.type==="game_over") { alert("GAME OVER: " + evt.msg); location.reload(); }
+    else if(evt.type==="disavow_countdown") showNotification(`DISAVOWED: ${evt.ticks_left} ticks`, "critical"); 
+    else if(evt.type==="game_over") { alert("GAME OVER: " + evt.msg); location.reload(); }
 }
 
 function showNotification(msg, type = "info") {

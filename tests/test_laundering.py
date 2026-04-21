@@ -1,7 +1,6 @@
 import pytest
-from core.game_state import GameState, BankAccount, TransactionRecord
+from core.game_state import GameState, BankAccount
 from core import finance_engine
-from core import constants as C
 
 @pytest.fixture
 def state():

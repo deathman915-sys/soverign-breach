@@ -601,6 +601,13 @@ class PMCSquad:
 
 
 @dataclass
+class Country:
+    name: str = ""
+    conflict_level: int = 0  # 0=Stable, 1=Tense, 2=Skirmish, 3=War
+    alignment: str = "Neutral"
+
+
+@dataclass
 class Company:
     name: str = ""
     company_type: CompanyType = CompanyType.GENERAL
@@ -629,6 +636,7 @@ class WorldState:
     people: list[Person] = field(default_factory=list)  # was npc_agents dicts
     manifests: list[TransportManifest] = field(default_factory=list)
     pmc_squads: list[PMCSquad] = field(default_factory=list)
+    countries: list[Country] = field(default_factory=list) # NEW: Dynamic border conflict state
 
 
 # =========================================================================

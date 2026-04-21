@@ -560,6 +560,12 @@ def on_tick(tick_count):
     if not hasattr(eel, "update_hud"):
         return
     state = engine.state
+    
+    # High-Fidelity Throttling: Only push HUD every 4 ticks (~5Hz) 
+    # unless a trace is active (requires 20Hz for smooth progress)
+    if tick_count % 4 != 0 and not state.connection.trace_active:
+        return
+
     try:
         hours = (tick_count // 3600) % 24
         minutes = (tick_count // 60) % 60
@@ -576,12 +582,14 @@ def on_tick(tick_count):
                 "balance_str": f"{state.player.balance:,}",
                 "handle": state.player.handle,
                 "localhost_ip": state.player.localhost_ip,
-                "neuromancer_str": f"NR:{state.player.neuromancer_rating} Neutral"
+                "neuromancer_str": f"NR:{state.player.neuromancer_rating} Neutral",
+                "credit_score": state.player.credit_score
             },
             "trace": {
                 "active": state.connection.trace_active,
                 "progress": state.connection.trace_progress
-            }
+            },
+            "_hot_ratio": state._hot_ratio # Sync global suspect funds
         }
         eel.update_hud(data)()
     except Exception:

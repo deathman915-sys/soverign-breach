@@ -61,6 +61,10 @@ class WorldSimulator:
         if tick % COMPUTER_TICK_INTERVAL == 0 and tick > 0:
             self._tick_computers(state)
 
+        # Geopolitical Conflicts
+        if tick % (NEWS_TICK_INTERVAL * 4) == 0 and tick > 0:
+            events.extend(self._tick_conflicts(state))
+
         # News
         if tick % NEWS_TICK_INTERVAL == 0 and tick > 0:
             news = self._generate_news(state)
@@ -70,6 +74,45 @@ class WorldSimulator:
         # Process pending region restores
         events.extend(self._process_restores(state))
 
+        return events
+
+    # ------------------------------------------------------------------
+    # Geopolitical Conflicts
+    # ------------------------------------------------------------------
+    def _tick_conflicts(self, state: GameState) -> list[dict]:
+        """Occasionally shift country conflict levels."""
+        events = []
+        if not state.world.countries:
+            return []
+
+        # 2% chance per conflict tick to shift a random country
+        if random.random() < 0.02:
+            country = random.choice(state.world.countries)
+            old_level = country.conflict_level
+            
+            # Weighted shift: More likely to stay stable, but can escalate
+            if old_level == 0:
+                new_level = 1 if random.random() < 0.3 else 0
+            elif old_level == 3:
+                new_level = 2 if random.random() < 0.4 else 3
+            else:
+                new_level = old_level + random.choice([-1, 1])
+            
+            if new_level != old_level:
+                country.conflict_level = new_level
+                levels = ["Stable", "Tense", "Skirmish", "War"]
+                events.append({
+                    "type": "conflict_shift",
+                    "country": country.name,
+                    "level": new_level,
+                    "msg": f"{country.name} is now {levels[new_level]}"
+                })
+                
+                # Generate news for significant escalations
+                if new_level >= 2:
+                    from core.news_engine import add_news
+                    add_news(state, "system_failure", system_name=f"{country.name} Border Control")
+        
         return events
 
     # ------------------------------------------------------------------

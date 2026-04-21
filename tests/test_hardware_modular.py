@@ -1,7 +1,6 @@
 import pytest
-from core.game_state import GameState, CPUCore
-from core.store_engine import buy_software, buy_gateway
-from core import constants as C
+from core.game_state import GameState
+from core.store_engine import buy_gateway
 
 @pytest.fixture
 def state():
@@ -39,7 +38,6 @@ def test_purchase_individual_cpu(state):
 
 def test_memory_vs_storage_separation(state):
     """Verify that Memory (tool capacity) is separate from VFS Storage (file capacity)."""
-    from core.store_engine import buy_gateway
     
     # Starting state
     assert state.gateway.storage_gq == 24

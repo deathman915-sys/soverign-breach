@@ -18,6 +18,7 @@ from core.game_state import (
     CompanyType,
     Person,
     Record,
+    Country
 )
 from core import constants as C
 from core.name_generator import generate_ip, generate_company_name, generate_name
@@ -55,10 +56,13 @@ def generate_world(state: GameState):
     # 3. Generate People (Agents + Civilians)
     _generate_population(state, rng)
 
-    # 4. Generate Records for all people
+    # 4. Generate Countries (Dynamic Borders)
+    _generate_countries(state, rng)
+
+    # 5. Generate Records for all people
     _generate_all_records(state, rng)
 
-    # 5. Procedural Corporate Servers
+    # 6. Procedural Corporate Servers
     _generate_corporate_network(state, rng)
 
     # ==============================================================
@@ -476,3 +480,37 @@ def _load_starting_software(state: GameState):
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"Failed to load starting_software.json: {e}")
+
+
+def _generate_countries(state: GameState, rng: random.Random):
+    """Initialize the list of countries in the world state."""
+    
+    # Canonical list of countries (matching web/countries.geojson names)
+    names = [
+        "Afghanistan", "Albania", "Algeria", "Angola", "Antarctica", "Argentina", "Armenia", "Australia", 
+        "Austria", "Azerbaijan", "Bangladesh", "Belarus", "Belgium", "Belize", "Benin", "Bermuda", 
+        "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", 
+        "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", 
+        "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", 
+        "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominican Republic", "East Timor", 
+        "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Ethiopia", 
+        "Falkland Islands", "Fiji", "Finland", "France", "French Guiana", "French Southern and Antarctic Lands", 
+        "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Greenland", "Guatemala", "Guinea", 
+        "Guinea Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", 
+        "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", 
+        "Kenya", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", 
+        "Lithuania", "Luxembourg", "Macedonia", "Madagascar", "Malawi", "Malaysia", "Mali", "Malta", "Mauritania", 
+        "Mexico", "Moldova", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nepal", 
+        "Netherlands", "New Caledonia", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", 
+        "Northern Cyprus", "Norway", "Oman", "Pakistan", "Panama", "Papua New Guinea", "Paraguay", "Peru", 
+        "Philippines", "Poland", "Portugal", "Puerto Rico", "Qatar", "Republic of Serbia", "Republic of the Congo", 
+        "Romania", "Russia", "Rwanda", "Saudi Arabia", "Senegal", "Sierra Leone", "Slovakia", "Slovenia", 
+        "Solomon Islands", "Somalia", "Somaliland", "South Africa", "South Korea", "South Sudan", "Spain", 
+        "Sri Lanka", "Sudan", "Suriname", "Swaziland", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", 
+        "Thailand", "The Bahamas", "Togo", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Uganda", 
+        "Ukraine", "United Arab Emirates", "United Kingdom", "United Republic of Tanzania", "United States of America", 
+        "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam", "West Bank", "Western Sahara", "Yemen", 
+        "Zambia", "Zimbabwe"
+    ]
+    
+    state.world.countries = [Country(name=n) for n in names]

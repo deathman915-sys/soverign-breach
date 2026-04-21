@@ -1,7 +1,6 @@
 import ast
 import os
 import re
-import pytest
 
 def get_exposed_python_functions(file_path):
     """Extracts all function names decorated with @eel.expose in a Python file."""

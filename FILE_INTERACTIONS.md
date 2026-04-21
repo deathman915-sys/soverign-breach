@@ -244,6 +244,12 @@ To ensure modularity and prevent regressions as the simulation scales, the proje
 -   **`tests/test_eel_bridges.py`**: AST-based parity test ensuring all JS calls have corresponding @eel.expose definitions.
 -   **`tests/test_finance_advanced.py`**: Verification of loan deadlines, offshore fees, and asset repossession logic.
 -   **`tests/test_laundering.py`**: Verification of 'Hot Credits' signatures, cleaning via bouncing/offshore, and cryptographic Ghost Logs.
+-   **`tests/test_npc_competition.py`**: Rivals claiming expired unaccepted missions.
+-   **`tests/test_npc_map_blips.py`**: Stochastic generation of NPC activity blips on the map.
+-   **`tests/test_autonomous_news.py`**: Verification of mergers and ambient breach reports.
+-   **`tests/test_finance_rendering.py`**: Backend-driven UI generation and high-fidelity centering.
+
+*(Current Test Count: 527 Passed)*
 
 *(Current Test Count: 517 Passed)*
 

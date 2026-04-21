@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import random
 import logging
-from html import escape
 
 from core.game_state import GameState, NewsItem
 from core.name_generator import generate_name
