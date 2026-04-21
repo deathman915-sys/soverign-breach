@@ -399,14 +399,35 @@ To ensure maximum fidelity and logic stability, we successfully built and perfec
     - **Map Auto-Reflow**: Linked the World Map application to the resize events, ensuring the Leaflet canvas automatically invalidates and redraws its coordinates during scaling.
     - **Active Highlighting**: Developed an active window tracking system that visually elevates the focused window via a glowing cyan border and brightened title bar.
 - **Desktop Personalization**:
-    - **Wallpaper Engine**: Implemented `setBackground` logic to support custom tactical imagery or "Pure Void" (black) backgrounds.
+    - **Wallpaper Engine**: Implemented `setBackground` logic to support custom tactical imagery or "Pure Void" (black) backgrounds.        
     - **Context Menu Integration**: Added a "WALLPAPER" section to the desktop right-click menu for real-time aesthetic rotation.
 - **TDD Verification**: Total test count remains at **502 passed**. UI interaction logic verified through manual functional audit of window state transitions.
 
+### Phase 22: High-Fidelity Economy & Structural Integrity (The "Audit" Milestone — April 21, 2026)
+- **Environmental Mastery**:
+    - Equipped the terminal with **Rust-powered tools** (`rg`, `ruff`, `tokei`, `uv`, `fzf`, `bat`, `jq`) via Winget.
+    - Established the **GitHub Uplink**: Initialized the repository and synchronized the local "Forge" with the cloud.
+- **The "Great Audit" (Structural Healing)**:
+    - **Forensic Scan Repair**: Fixed a critical bug in `npc_engine` where investigators scanned internal logs instead of public suspicion levels, making forensics non-functional.
+    - **Timer Leak Fix**: Repaired the bank robbery system to correctly purge timers once logs are wiped.
+    - **Difficulty Sync**: Synchronized real-time tool progress (`Password_Breaker`) with actual server difficulty.
+    - **Ruff Compliance**: Purged all ambiguous variables, redundant properties, and unused imports from the core engine.
+- **Advanced Financial Forensics**:
+    - **Hot Credits**: Implemented cryptographic "hot" signatures on stolen funds that increase global alert levels based on a weighted average `hot_ratio`.
+    - **Money Laundering**: Created a laundering loop where connection bounces (5% per hop) and **Offshore Accounts** (50% per transfer) "clean" the credits.
+    - **Ghost Logs**: Implemented permanent forensic signatures in bank internal backups that bypass standard log-deletion tools.
+    - **Asset Repossession**: Banks now employ automated "Debt Collection" scripts to delete player software if loans default (overdue 5,000 ticks).
+- **Frontend Resonance**:
+    - Synchronized **8 missing Eel bridges** (Missions, News, Remote Security) previously shouting into a void.
+    - Connected task progress/completion signals to real-time UI pushes.
+- **Sentinel Protocol (Automated Testing)**:
+    - Built an **AST-based Parity Test** (`tests/test_eel_bridges.py`) that automatically detects unexposed functions or broken bridges.
+    - Verified all logic with `tests/test_finance_advanced.py` and `tests/test_laundering.py`.
+    - **Total Test Count: 517 passed (100% Core Logic Pass Rate).**
+
 ---
 
-## 5. Technical Stack
-- **Language**: Python 3.12+ (Backend), JavaScript (Frontend)
+## 5. Technical Stack- **Language**: Python 3.12+ (Backend), JavaScript (Frontend)
 - **Communication**: Eel (Python <-> JS Bridge)
 - **UI Framework**: HTML5 / CSS3 / Vanilla JS
 - **Visuals**: CSS Gradients, Box-Shadow Glows, HTML5 Canvas (Vector Map)
