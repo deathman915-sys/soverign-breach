@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Uplink OS - Upgrade Terminal</title>
+    <style>
+        :root { --p-blue: #0000ff; --b-blue: #00aaff; --d-blue: #000044; --cyan: #66ccff; --green: #00ff00; --red: #ff3333; --orange: #ffaa00; --yellow: #ffff00; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Consolas', monospace; overflow: hidden; height: 100vh; }
+        #container { display: grid; grid-template-rows: 60px 1fr 100px; height: 100vh; padding: 10px; gap: 10px; }
+        
+        header { border: 1px solid var(--p-blue); background: rgba(0, 0, 68, 0.3); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+        .balance { font-size: 20px; color: var(--green); text-shadow: 0 0 10px var(--green); }
+        
+        main { display: grid; grid-template-columns: 200px 1fr; gap: 10px; }
+        nav { border: 1px solid var(--p-blue); display: flex; flex-direction: column; padding: 10px; gap: 5px; }
+        .nav-item { padding: 10px; border: 1px solid #222; cursor: pointer; text-align: center; font-size: 12px; transition: 0.3s; }
+        .nav-item:hover { border-color: var(--b-blue); background: rgba(0, 170, 255, 0.1); }
+        .nav-item.active { background: var(--d-blue); border-color: var(--b-blue); color: white; }
+        
+        #content-area { border: 1px solid var(--p-blue); background: #050505; padding: 20px; overflow-y: auto; position: relative; }
+        
+        footer { border: 1px solid var(--p-blue); background: rgba(0, 0, 68, 0.2); display: flex; align-items: center; padding: 0 20px; gap: 40px; font-size: 12px; }
+        .spec-item { color: #888; } .spec-val { color: var(--cyan); margin-left: 5px; }
+
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .store-card { border: 1px solid #333; background: #0a0a0a; padding: 15px; display: flex; flex-direction: column; gap: 8px; transition: 0.3s; }
+        .store-card:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 170, 255, 0.2); }
+        .item-name { font-weight: bold; color: var(--b-blue); font-size: 14px; }
+        .item-price { color: var(--yellow); font-size: 16px; }
+        .item-spec { font-size: 11px; color: #888; }
+        .buy-btn { background: var(--d-blue); border: 1px solid var(--p-blue); color: white; padding: 8px; cursor: pointer; font-family: inherit; font-size: 11px; margin-top: auto; }
+        .buy-btn:hover { background: var(--p-blue); border-color: white; }
+        
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 1000; }
+        .hidden { display: none !important; }
+    </style>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+<body>
+    <div id="container">
+        <header>
+            <h2>UPGRADE TERMINAL v4.0</h2>
+            <div class="balance">CREDITS: <span id="player-balance">0</span>c</div>
+        </header>
+        
+        <main>
+            <nav>
+                <div class="nav-item active" onclick="switchTab('software')">SOFTWARE</div>
+                <div class="nav-item" onclick="switchTab('hardware')">GATEWAYS</div>
+                <div class="nav-item" onclick="switchTab('components')">COMPONENTS</div>
+                <div class="nav-item" onclick="switchTab('inventory')">INVENTORY</div>
+            </nav>
+            <div id="content-area">
+                <div id="tab-software" class="catalog-grid"></div>
+                <div id="tab-hardware" class="catalog-grid hidden"></div>
+                <div id="tab-components" class="catalog-grid hidden">
+                    <h3 style="grid-column: 1/-1; color: var(--cyan); border-bottom: 1px solid #333; padding-bottom: 5px;">COOLING SYSTEMS</h3>
+                    <div id="cooling-grid" style="display:contents"></div>
+                    <h3 style="grid-column: 1/-1; color: var(--cyan); border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 20px;">POWER SUPPLY UNITS</h3>
+                    <div id="psu-grid" style="display:contents"></div>
+                </div>
+                <div id="tab-inventory" class="hidden">
+                    <h3 style="color: var(--b-blue)">INSTALLED MODULES (VFS)</h3>
+                    <div id="vfs-list" style="color: #ccc; line-height: 1.6;"></div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <div class="spec-item">GW: <span class="spec-val" id="gw-name">---</span></div>
+            <div class="spec-item">CPU: <span class="spec-val" id="gw-cpu">0</span>GHz</div>
+            <div class="spec-item">MODEM: <span class="spec-val" id="gw-modem">0</span>x</div>
+            <div class="spec-item">MEMORY: <span class="spec-val" id="gw-memory">0</span>Gq</div>
+            <div class="spec-item">COOLING: <span class="spec-val" id="gw-cooling">0</span>x</div>
+            <div class="spec-item">PSU: <span class="spec-val" id="gw-psu">0</span>W</div>
+        </footer>
+    </div>
+    <div class="scanlines"></div>
+
+    <script>
+        let state = null;
+
+        async function refresh() {
+            state = await eel.get_store_state()();
+            
+            // Header/Footer
+            document.getElementById('player-balance').innerText = state.player.balance.toLocaleString();
+            document.getElementById('gw-name').innerText = state.gateway.name;
+            document.getElementById('gw-cpu').innerText = state.gateway.cpu;
+            document.getElementById('gw-modem').innerText = state.gateway.modem;
+            document.getElementById('gw-memory').innerText = state.gateway.memory;
+            document.getElementById('gw-cooling').innerText = state.gateway.cooling;
+            document.getElementById('gw-psu').innerText = state.gateway.psu;
+
+            // Software Catalog
+            document.getElementById('tab-software').innerHTML = state.catalogs.software.map(s => `
+                <div class="store-card">
+                    <div class="item-name">${s.name} v${s.version}.0</div>
+                    <div class="item-price">${s.price > 0 ? s.price + 'c' : 'FREE'}</div>
+                    <div class="item-spec">SIZE: ${s.size} Gq</div>
+                    <button class="buy-btn" onclick="buySoftware('${s.name}', ${s.version})">PURCHASE LICENSE</button>
+                </div>
+            `).join('');
+
+            // Hardware Catalog
+            document.getElementById('tab-hardware').innerHTML = state.catalogs.gateways.map(g => `
+                <div class="store-card">
+                    <div class="item-name">${g.name}</div>
+                    <div class="item-price">${g.price > 0 ? g.price + 'c' : 'STANDARD'}</div>
+                    <div class="item-spec">
+                        CPU: ${g.cpu}GHz | MODEM: ${g.modem}x<br>
+                        MEM: ${g.memory}Gq | PSU: ${g.psu}W | COOL: ${g.cooling}x
+                    </div>
+                    <button class="buy-btn" onclick="buyGateway('${g.name}')">UPGRADE GATEWAY</button>
+                </div>
+            `).join('');
+
+            // Components
+            document.getElementById('cooling-grid').innerHTML = state.catalogs.cooling.map(c => `
+                <div class="store-card">
+                    <div class="item-name">${c.name}</div>
+                    <div class="item-price">${c.price > 0 ? c.price + 'c' : 'STANDARD'}</div>
+                    <div class="item-spec">EFFICIENCY: ${c.cooling}x</div>
+                    <button class="buy-btn" onclick="buyCooling('${c.name}')">INSTALL COOLANT</button>
+                </div>
+            `).join('');
+
+            document.getElementById('psu-grid').innerHTML = state.catalogs.psu.map(p => `
+                <div class="store-card">
+                    <div class="item-name">${p.name}</div>
+                    <div class="item-price">${p.price > 0 ? p.price + 'c' : 'STANDARD'}</div>
+                    <div class="item-spec">CAPACITY: ${p.psu}W</div>
+                    <button class="buy-btn" onclick="buyPSU('${p.name}')">UPGRADE PSU</button>
+                </div>
+            `).join('');
+
+            // Inventory
+            document.getElementById('vfs-list').innerHTML = state.vfs.length > 0 
+                ? state.vfs.map(f => `> ${f}`).join('<br>')
+                : "No software detected.";
+        }
+
+        async function buySoftware(name, version) {
+            const res = await eel.buy_software(name, version)();
+            if (res.success) alert("Software purchased successfully.");
+            else alert("ERROR: " + res.error);
+            refresh();
+        }
+
+        async function buyGateway(name) {
+            const res = await eel.buy_gateway(name)();
+            if (res.success) alert("Gateway upgraded.");
+            else alert("ERROR: " + res.error);
+            refresh();
+        }
+
+        async function buyCooling(name) {
+            const res = await eel.buy_cooling(name)();
+            if (res.success) alert("Cooling system upgraded.");
+            else alert("ERROR: " + res.error);
+            refresh();
+        }
+
+        async function buyPSU(name) {
+            const res = await eel.buy_psu(name)();
+            if (res.success) alert("PSU upgraded.");
+            else alert("ERROR: " + res.error);
+            refresh();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('tab-software').classList.add('hidden');
+            document.getElementById('tab-hardware').classList.add('hidden');
+            document.getElementById('tab-components').classList.add('hidden');
+            document.getElementById('tab-inventory').classList.add('hidden');
+            
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+        }
+
+        window.addEventListener('load', () => {
+            refresh();
+        });
+    </script>
+</body>
+</html>

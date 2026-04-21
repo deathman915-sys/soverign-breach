@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.pyre_cache/
+.restriction_cache/
+
+# User Data & Identity
+profiles/*.json
+
+# Large Assets (Optional: remove if you want them in the vault)
+# web/assets/music/*.uni
+# web/assets/music/*.s3m
+# web/assets/music/*.xm
+# web/assets/music/*.mod
+
+# IDEs & System
+.vscode/
+.idea/
+.aider/
+.aider*
+*.swp
+*.bak
+Thumbs.db
+.DS_Store
+
+# Temporary directory for tool outputs
+.gemini/

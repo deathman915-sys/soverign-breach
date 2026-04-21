@@ -1,0 +1,28 @@
+wing: sovereign-breach
+rooms:
+- name: core
+  description: Core game engine modules
+  keywords:
+  - engine
+  - game
+  - simulation
+- name: web
+  description: Web UI and frontend
+  keywords:
+  - web
+  - ui
+  - frontend
+- name: docs
+  description: Development logs and documentation
+  keywords:
+  - development
+  - log
+  - documentation
+- name: tests
+  description: Test suite
+  keywords:
+  - test
+  - pytest
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Fidelity Map Prototype (WebGIS)</title>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: Consolas, monospace; overflow: hidden; }
+        #map-container { position: absolute; inset: 20px; border: 1px solid #0000ff; box-shadow: 0 0 20px rgba(0,0,255,0.3); z-index: 1; }
+        #worldMap { width: 100%; height: 100%; background: #000; }
+        .overlay { position: absolute; top: 30px; left: 30px; z-index: 1000; pointer-events: none; text-shadow: 0 0 5px black; }
+        .instructions { position: absolute; bottom: 30px; left: 30px; color: #66ccff; font-size: 12px; z-index: 1000; pointer-events: none; text-shadow: 0 0 5px black; }
+        
+        /* Custom map styling to look like a hacker interface */
+        .leaflet-container { background: #000010; }
+        
+        /* Marker CSS */
+        .hacker-marker { background-color: #00aaff; border-radius: 50%; box-shadow: 0 0 10px #00aaff; border: 1px solid #fff; transition: all 0.2s; }
+        .hacker-marker-local { background-color: #00ff00; box-shadow: 0 0 15px #00ff00; }
+        .hacker-marker-chain { background-color: #ffffff; box-shadow: 0 0 10px #ffffff; }
+        .hacker-marker-airport { background-color: #ffaa00; border-radius: 2px; transform: rotate(45deg); box-shadow: 0 0 10px #ffaa00; }
+        .hacker-marker-port { background-color: #ffaa00; border-radius: 0; box-shadow: 0 0 10px #ffaa00; }
+        .hacker-marker-vehicle { background-color: #ff0000; box-shadow: 0 0 15px #ff0000; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+        
+        /* Brighten street tiles */
+        .street-tiles { filter: brightness(2.2) contrast(1.1) saturate(1.2); }
+
+        /* Scanlines */
+
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 2000; }
+        
+        /* Tooltip overrides */
+        .hacker-tooltip {
+            background: rgba(0, 0, 68, 0.9) !important;
+            border: 1px solid #00aaff !important;
+            color: #fff !important;
+            font-family: Consolas, monospace !important;
+            box-shadow: 0 0 10px #00aaff !important;
+        }
+        .hacker-tooltip.leaflet-tooltip-top:before { border-top-color: #00aaff !important; }
+        .hacker-tooltip.leaflet-tooltip-bottom:before { border-bottom-color: #00aaff !important; }
+    </style>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+<body>
+    <div id="map-container">
+        <div id="worldMap"></div>
+    </div>
+
+    <div class="overlay">
+        <h2>WORLD MAP PROTOTYPE v2.0 (Leaflet WebGIS)</h2>
+        <div id="status">Syncing with engine...</div>
+    </div>
+
+    <div class="instructions">
+        CLICK NODES TO BUILD BOUNCE CHAIN | WHITE NODES = ACTIVE ROUTE | DRAG TO PAN | SCROLL TO ZOOM
+    </div>
+    
+    <div class="scanlines"></div>
+
+    <script>
+        let map;
+        let nodeMarkers = {}; // ip -> marker
+        let bouncePolyline = null;
+        let allNodes = [];
+        let currentChain = [];
+
+        async function initMap() {
+            const bounds = [
+                [-90, -180],
+                [90, 180]
+            ];
+
+            map = L.map('worldMap', {
+                center: [20, 0],
+                zoom: 2,
+                minZoom: 2,
+                maxBounds: bounds,
+                maxBoundsViscosity: 1.0,
+                zoomControl: false, // Hide default zoom buttons for cleaner UI
+                attributionControl: false,
+                worldCopyJump: false
+            });
+
+            // Re-add the high-fidelity raster tiles for street-level zoom, 
+            // but strictly prevent them from wrapping/repeating.
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd',
+                noWrap: true,
+                bounds: bounds,
+                className: 'street-tiles' // Apply brightness filter!
+            }).addTo(map);
+
+            try {
+                const response = await fetch('countries.geojson');
+                const data = await response.json();
+                
+                L.geoJSON(data, {
+                    style: {
+                        color: "#00aaff", // Cyberpunk cyan border
+                        weight: 1,
+                        fillColor: "rgba(0, 0, 68, 0.8)", // Dark blue background tint
+                        fillOpacity: 0.1 // Further lowered opacity
+                    }
+                }).addTo(map);
+            } catch (error) {
+                console.error("Failed to load map data:", error);
+            }
+        }
+
+        function createCustomIcon(isLocal, inChain, nodeType) {
+            let className = 'hacker-marker';
+            
+            // 8 = AIRPORT, 9 = PORT, 10 = VEHICLE
+            if (nodeType === 8) className += ' hacker-marker-airport';
+            else if (nodeType === 9) className += ' hacker-marker-port';
+            else if (nodeType === 10) className += ' hacker-marker-vehicle';
+            
+            if (isLocal) className += ' hacker-marker-local';
+            else if (inChain) className += ' hacker-marker-chain';
+            
+            return L.divIcon({
+                className: className,
+                iconSize: [12, 12]
+            });
+        }
+
+        async function sync() {
+            const statusEl = document.getElementById('status');
+            try {
+                statusEl.innerText = "Requesting node data...";
+                const nodes = await eel.get_nodes()();
+                
+                if (nodes && nodes.length > 0) {
+                    statusEl.innerText = "Received " + nodes.length + " nodes. Syncing bounce chain...";
+                    allNodes = nodes;
+                    const chain = await eel.get_bounce_chain()();
+                    currentChain = chain;
+                    
+                    renderMap();
+                    
+                    statusEl.innerText = "SYSTEMS ONLINE | NODES: " + nodes.length;
+                    
+                    // Fit map bounds to show all nodes initially
+                    if (allNodes.length > 0) {
+                        const bounds = L.latLngBounds(allNodes.map(n => [n.y, n.x]));
+                        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 4 });
+                    }
+                    
+                    return true;
+                } else {
+                    statusEl.innerText = "Engine returned 0 nodes. Retrying...";
+                }
+            } catch (e) {
+                statusEl.innerText = "Connection Error: " + e.message + ". Retrying...";
+                console.error("Sync failed:", e);
+            }
+            return false;
+        }
+
+        function renderMap() {
+            // Clear existing markers and lines
+            Object.values(nodeMarkers).forEach(m => map.removeLayer(m));
+            nodeMarkers = {};
+            if (bouncePolyline) {
+                map.removeLayer(bouncePolyline);
+                bouncePolyline = null;
+            }
+
+            // Draw Bounce Chain Line
+            if (currentChain.length > 1) {
+                const latlngs = currentChain.map(ip => {
+                    const n = allNodes.find(node => node.ip === ip);
+                    return n ? [n.y, n.x] : null;
+                }).filter(ll => ll !== null);
+
+                bouncePolyline = L.polyline(latlngs, {
+                    color: '#ffffff',
+                    weight: 2,
+                    dashArray: '5, 5',
+                    opacity: 0.8
+                }).addTo(map);
+            }
+
+            // Draw Nodes
+            allNodes.forEach(n => {
+                const isLocal = n.ip === "127.0.0.1";
+                const inChain = currentChain.includes(n.ip);
+                
+                const marker = L.marker([n.y, n.x], {
+                    icon: createCustomIcon(isLocal, inChain, n.type),
+                    title: n.name.toUpperCase()
+                }).addTo(map);
+
+                marker.bindTooltip(n.name.toUpperCase() + "<br>" + n.ip, {
+                    className: 'hacker-tooltip',
+                    direction: 'top'
+                });
+
+                marker.on('click', async () => {
+                    const newChain = await eel.toggle_bounce(n.ip)();
+                    currentChain = newChain;
+                    renderMap();
+                });
+
+                nodeMarkers[n.ip] = marker;
+            });
+        }
+
+        window.addEventListener('load', async () => {
+            console.log("DOM Loaded. Initializing Leaflet Map...");
+            initMap();
+
+            // Keep trying until engine responds
+            const timer = setInterval(async () => {
+                if (await sync()) {
+                    console.log("Sync Complete.");
+                    clearInterval(timer);
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

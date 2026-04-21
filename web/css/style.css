@@ -1,0 +1,23 @@
+/* Onlink-Clone: Minimal utility styles */
+
+.user-name {
+    cursor: pointer;
+    display: block;
+    padding: 4px 8px;
+    color: #ccc;
+    transition: 0.2s;
+    border-left: 2px solid transparent;
+}
+.user-name:hover {
+    color: var(--cyan);
+    background: rgba(0, 170, 255, 0.1);
+    border-left-color: var(--cyan);
+}
+
+.hidden { display: none !important; }
+
+.menu-btn {
+    background: var(--d-blue); color: var(--cyan); border: 1px solid var(--p-blue);
+    padding: 3px 8px; font-family: inherit; font-size: 9px; cursor: pointer;
+}
+.menu-btn:hover { background: var(--p-blue); color: white; }

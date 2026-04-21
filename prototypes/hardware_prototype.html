@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Hardware Manager (VFS Update)</title>
+    <style>
+        :root {
+            --primary-blue: #0000ff;
+            --bright-blue: #00aaff;
+            --dark-blue: #000044;
+            --deep-blue: #000022;
+            --text-cyan: #66ccff;
+            --text-green: #00ff00;
+            --text-red: #ff0000;
+            --text-orange: #ffaa00;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; background: #000; color: #fff;
+            font-family: 'Consolas', monospace; overflow: hidden;
+            height: 100vh; font-size: 13px;
+        }
+
+        #container {
+            display: grid;
+            grid-template-columns: 350px 1fr 350px;
+            grid-template-rows: auto 1fr;
+            gap: 15px;
+            padding: 20px;
+            height: 100vh;
+        }
+
+        .header {
+            grid-column: 1 / span 3;
+            border-bottom: 1px solid var(--primary-blue);
+            padding-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .header h1 { margin: 0; color: var(--text-cyan); font-size: 20px; letter-spacing: 2px; }
+
+        .panel {
+            border: 1px solid var(--primary-blue);
+            background: rgba(0, 0, 68, 0.15);
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 255, 0.1);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            color: white; font-weight: bold; font-size: 12px;
+            margin-bottom: 15px; text-transform: uppercase;
+            letter-spacing: 1px; border-left: 3px solid var(--bright-blue);
+            padding-left: 8px;
+        }
+
+        /* --- GAUGES --- */
+        .gauge-container { margin-bottom: 20px; }
+        .gauge-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+        .bar-bg { width: 100%; height: 8px; background: #111; border: 1px solid #333; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+        .fill-green { background: var(--text-green); box-shadow: 0 0 5px var(--text-green); }
+        .fill-orange { background: var(--text-orange); box-shadow: 0 0 5px var(--text-orange); }
+        .fill-red { background: var(--text-red); box-shadow: 0 0 5px var(--text-red); }
+        .fill-cyan { background: var(--text-cyan); box-shadow: 0 0 5px var(--text-cyan); }
+
+        /* --- HARDWARE CARDS --- */
+        .hw-card {
+            background: #000; border: 1px solid #222;
+            padding: 10px; margin-bottom: 10px;
+        }
+        .hw-card.warning { border-color: var(--text-orange); }
+        .hw-card.danger { border-color: var(--text-red); }
+        .hw-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
+        .health-bar { width: 100%; height: 3px; background: #111; margin: 5px 0; }
+        .health-fill { height: 100%; background: var(--text-green); }
+
+        .controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        input[type=range] { flex-grow: 1; accent-color: var(--bright-blue); }
+
+        /* --- LISTS --- */
+        .scroll-list { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
+        .item-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px; border-bottom: 1px solid #111;
+            cursor: pointer; transition: 0.1s;
+        }
+        .item-row:hover { background: var(--dark-blue); }
+        .item-row .name { color: var(--text-cyan); font-weight: bold; }
+        .item-row .type-tag { font-size: 9px; padding: 2px 4px; border: 1px solid #444; color: #888; }
+        .item-row.data .name { color: var(--text-orange); }
+
+        .delete-btn { background: #300; color: #f55; border: 1px solid #f55; font-size: 9px; padding: 2px 4px; cursor: pointer; }
+        .delete-btn:hover { background: #f00; color: #fff; }
+
+        .task-row {
+            background: #050505; border: 1px solid #222;
+            margin-bottom: 5px; padding: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .terminate-btn {
+            background: #300; color: #f55; border: 1px solid #f55;
+            cursor: pointer; padding: 2px 6px; font-size: 9px;
+        }
+
+        /* --- RAM SLOTS --- */
+        .ram-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+        .ram-slot {
+            height: 25px; border: 1px solid #333;
+            background: #111; display: flex; align-items: center; justify-content: center;
+            font-size: 8px; color: #444;
+        }
+        .ram-slot.active {
+            border-color: var(--text-green);
+            background: rgba(0, 255, 0, 0.1);
+            color: var(--text-green);
+            box-shadow: inset 0 0 5px var(--text-green);
+        }
+
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+            background-size: 100% 4px; pointer-events: none; z-index: 1000;
+        }
+    </style>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+<body>
+    <div id="container">
+        <div class="header">
+            <h1>GATEWAY BIOS v4.5 // STORAGE & MEMORY MANAGEMENT</h1>
+            <div id="status-tag" style="color: var(--text-green);">SYSTEM STABLE</div>
+        </div>
+
+        <!-- Left: Monitoring & VFS Stats -->
+        <div class="panel">
+            <div class="panel-title">Environmental Data</div>
+            
+            <div class="gauge-container">
+                <div class="gauge-label"><span>CORE TEMPERATURE</span><span id="txt-heat">25.0°C</span></div>
+                <div class="bar-bg"><div id="fill-heat" class="bar-fill fill-green" style="width: 25%"></div></div>
+            </div>
+
+            <div class="gauge-container">
+                <div class="gauge-label"><span>VFS STORAGE USED</span><span id="txt-vfs">0Gq / 64Gq</span></div>
+                <div class="bar-bg"><div id="fill-vfs" class="bar-fill fill-cyan" style="width: 0%"></div></div>
+            </div>
+
+            <div class="gauge-container">
+                <div class="gauge-label"><span>PSU POWER DRAW</span><span id="txt-power">50W / 500W</span></div>
+                <div class="bar-bg"><div id="fill-power" class="bar-fill fill-green" style="width: 10%"></div></div>
+            </div>
+
+            <div class="panel-title">Component Health</div>
+            <div id="health-list" class="scroll-list">
+                <!-- RAM, Storage, Modem health -->
+            </div>
+        </div>
+
+        <!-- Center: VFS File Browser -->
+        <div class="panel">
+            <div class="panel-title">VFS - Virtual File System (Local Drive)</div>
+            <div id="file-list" class="scroll-list">
+                <!-- All files (tools and data) -->
+            </div>
+
+            <div class="panel-title" style="margin-top: 15px;">Active execution (RAM Slots)</div>
+            <div id="ram-slots" class="ram-grid">
+                <!-- 16 slots -->
+            </div>
+        </div>
+
+        <!-- Right: Overclocking & Tasks -->
+        <div class="panel">
+            <div class="panel-title">Active Processes</div>
+            <div id="task-list" class="scroll-list" style="max-height: 250px; margin-bottom: 15px;"></div>
+
+            <div class="panel-title">Processor Overclocking</div>
+            <div id="cpu-list" class="scroll-list">
+                <!-- CPU cards -->
+            </div>
+
+            <div class="panel-title" style="margin-top: 10px;">Bus Tuning</div>
+            <div class="hw-card" style="padding: 5px 10px;">
+                <div class="gauge-label" style="font-size: 10px;"><span>RAM OC</span><span id="txt-ram-oc">1.0x</span></div>
+                <input type="range" min="1.0" max="2.5" step="0.1" value="1.0" oninput="changeOC('ram', this.value)" style="width: 100%;">
+            </div>
+            <div class="hw-card" style="padding: 5px 10px;">
+                <div class="gauge-label" style="font-size: 10px;"><span>VFS BUS OC</span><span id="txt-storage-oc">1.0x</span></div>
+                <input type="range" min="1.0" max="2.5" step="0.1" value="1.0" oninput="changeOC('storage', this.value)" style="width: 100%;">
+            </div>
+        </div>
+    </div>
+
+    <div class="scanlines"></div>
+
+    <script>
+        async function refresh() {
+            const state = await eel.get_hardware_state()();
+            const gw = state.gateway;
+
+            // 1. Gauges
+            document.getElementById('txt-heat').innerText = gw.heat.toFixed(1) + "°C";
+            document.getElementById('fill-heat').style.width = Math.min(100, (gw.heat / 100) * 100) + "%";
+
+            document.getElementById('txt-vfs').innerText = gw.storage_used + "Gq / " + gw.storage_capacity + "Gq";
+            const vfsPct = (gw.storage_used / gw.storage_capacity) * 100;
+            document.getElementById('fill-vfs').style.width = vfsPct + "%";
+
+            document.getElementById('txt-power').innerText = Math.round(gw.power_draw) + "W / " + gw.power_capacity + "W";
+            document.getElementById('fill-power').style.width = Math.min(100, (gw.power_draw / gw.power_capacity) * 100) + "%";
+
+            // 2. RAM Slots
+            const ramGrid = document.getElementById('ram-slots');
+            ramGrid.innerHTML = '';
+            for (let i = 0; i < gw.ram_slots; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'ram-slot' + (i < gw.ram_used ? ' active' : '');
+                slot.innerText = i < gw.ram_used ? 'BUSY' : 'IDLE';
+                ramGrid.appendChild(slot);
+            }
+
+            // 3. Health & CPU
+            const hList = document.getElementById('health-list');
+            hList.innerHTML = `
+                ${renderHealthCard('RAM CHIPS', gw.ram_health)}
+                ${renderHealthCard('VFS DRIVE', gw.storage_health)}
+                ${renderHealthCard('MODEM', gw.modem_health)}
+            `;
+
+            const cpuList = document.getElementById('cpu-list');
+            cpuList.innerHTML = '';
+            gw.cpus.forEach(cpu => {
+                const card = document.createElement('div');
+                card.className = 'hw-card';
+                card.innerHTML = `
+                    <div class="hw-header"><span>CPU #${cpu.id}</span><span>${cpu.speed.toFixed(1)}GHz</span></div>
+                    <div class="controls">
+                        <span>${cpu.overclock.toFixed(1)}x</span>
+                        <input type="range" min="1.0" max="2.5" step="0.1" value="${cpu.overclock}" onchange="changeOC('cpu', this.value, ${cpu.id})">
+                    </div>
+                `;
+                cpuList.appendChild(card);
+            });
+
+            // 4. VFS Files
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = state.vfs.map(f => `
+                <div class="item-row ${f.type}">
+                    <div>
+                        <span class="type-tag">${f.type.toUpperCase()}</span>
+                        <span class="name">${f.name}</span>
+                        ${f.version ? `<small>v${f.version.toFixed(1)}</small>` : ''}
+                    </div>
+                    <div>
+                        <span style="color: #666; margin-right: 10px;">${f.size_gq} Gq</span>
+                        ${f.type === 'tool' ? `<button onclick="launch('${f.id}')" style="background:#004; color:#fff; border:1px solid #00f; cursor:pointer;">RUN</button>` : ''}
+                        <button class="delete-btn" onclick="deleteFile('${f.id}')">DEL</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 5. Tasks
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = state.tasks.map(t => `
+                <div class="task-row">
+                    <div><b>${t.name}</b><br><small>RAM: ${t.ram_used} slots</small></div>
+                    <button class="terminate-btn" onclick="terminate('${t.instance_id}')">KILL</button>
+                </div>
+            `).join('') || '<div style="color: #444;">No active tasks</div>';
+
+            document.getElementById('txt-ram-oc').innerText = gw.ram_overclock.toFixed(1) + "x";
+            document.getElementById('txt-storage-oc').innerText = gw.storage_overclock.toFixed(1) + "x";
+        }
+
+        function renderHealthCard(name, val) {
+            return `<div class="hw-card"><div class="hw-header"><span>${name}</span><span>${val.toFixed(0)}%</span></div>
+                    <div class="health-bar"><div class="health-fill" style="width: ${val}%; background: ${val > 70 ? '#0f0' : (val > 30 ? '#fa0' : '#f00')}"></div></div></div>`;
+        }
+
+        async function launch(id) { const r = await eel.launch_tool(id)(); if(!r.success) alert(r.error); refresh(); }
+        async function terminate(id) { await eel.terminate_task(id)(); refresh(); }
+        async function deleteFile(id) { if(confirm("Delete file?")) await eel.delete_file(id)(); refresh(); }
+        async function changeOC(comp, val, id) { await eel.set_oc(comp, parseFloat(val), id)(); refresh(); }
+
+        window.addEventListener('load', () => { refresh(); setInterval(refresh, 1000); });
+    </script>
+</body>
+</html>

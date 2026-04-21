@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>High-Fidelity Gateway BIOS v6.0</title>
+    <style>
+        :root { --p-blue: #0000ff; --b-blue: #00aaff; --d-blue: #000044; --cyan: #66ccff; --green: #00ff00; --red: #ff0000; --orange: #ffaa00; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Consolas', monospace; overflow: hidden; height: 100vh; font-size: 12px; }
+        #tool-cursor { position: fixed; pointer-events: none; z-index: 9999; background: rgba(0, 0, 255, 0.8); color: white; border: 1px solid white; padding: 2px 8px; font-weight: bold; box-shadow: 0 0 10px white; }
+        #container { display: grid; grid-template-columns: 350px 1fr 350px; gap: 15px; padding: 20px; height: 100vh; }
+        .header { grid-column: 1/4; border-bottom: 1px solid var(--p-blue); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .panel { border: 1px solid var(--p-blue); background: rgba(0, 0, 68, 0.15); padding: 15px; display: flex; flex-direction: column; overflow: hidden; }
+        .panel-title { color: white; font-weight: bold; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; border-left: 3px solid var(--b-blue); padding-left: 8px; }
+        
+        .health-bar { width: 100%; height: 4px; background: #111; margin-top: 4px; }
+        .health-fill { height: 100%; transition: width 0.5s; }
+
+        .gauge { margin-bottom: 15px; }
+        .bar-bg { width: 100%; height: 10px; background: #111; border: 1px solid #333; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+        
+        .vfs-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; background: #111; padding: 4px; border: 1px solid #333; margin-bottom: 10px; }
+        .vfs-block { height: 25px; background: #050505; border: 1px solid #222; }
+        .vfs-block.tool { background: var(--p-blue); border-color: var(--b-blue); }
+        .vfs-block.data { background: var(--orange); border-color: #f50; }
+        
+        .ram-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
+        .ram-slot { height: 35px; border: 1px solid #333; background: #000; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; }
+        .ram-slot.active { border-color: var(--green); color: var(--green); background: rgba(0,255,0,0.1); box-shadow: inset 0 0 5px var(--green); }
+        .ram-slot.selected { border-color: white; box-shadow: 0 0 10px white; }
+
+        .hw-card { background: #000; border: 1px solid #222; padding: 8px; margin-bottom: 8px; }
+        .item-row { display: flex; justify-content: space-between; padding: 6px; border-bottom: 1px solid #111; cursor: crosshair; }
+        .item-row:hover { background: var(--d-blue); }
+        .btn { background: #004; color: #fff; border: 1px solid #00f; padding: 2px 5px; font-size: 9px; cursor: pointer; }
+        .btn:hover { background: #00f; }
+        
+        #event-log { background: #000; border: 1px solid #222; padding: 10px; font-family: 'Courier New', monospace; font-size: 10px; color: var(--cyan); overflow-y: hidden; height: 150px; }
+
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 1000; }
+        .hidden { display: none !important; }
+
+        .task-card { background: #111; padding: 10px; margin-bottom: 5px; border: 1px solid #333; }
+        .progress-micro { height: 2px; background: #000; width: 100%; margin: 5px 0; }
+        .progress-micro-fill { height: 100%; background: var(--green); box-shadow: 0 0 5px var(--green); }
+    </style>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+<body>
+    <div id="tool-cursor" class="hidden"></div>
+    <div id="container">
+        <div class="header">
+            <h1 style="color: var(--cyan);">GATEWAY BIOS v6.0 // SCHEDULER & VFS</h1>
+            <div id="credits" style="color: var(--green); font-size: 16px;">5000c</div>
+        </div>
+
+        <!-- Left Panel: Monitor & Log -->
+        <div class="panel">
+            <div class="panel-title">Environmental Data</div>
+            <div class="gauge">
+                <div style="display:flex; justify-content:space-between"><span>CORE TEMP</span><span id="t-heat">25°C</span></div>
+                <div class="bar-bg"><div id="f-heat" class="bar-fill" style="background:var(--green)"></div></div>
+            </div>
+            <div class="gauge">
+                <div style="display:flex; justify-content:space-between"><span>POWER LOAD</span><span id="t-power">50W / 500W</span></div>
+                <div class="bar-bg"><div id="f-power" class="bar-fill" style="background:var(--cyan)"></div></div>
+            </div>
+            
+            <div class="panel-title">Active Task Scheduling</div>
+            <div id="task-list" style="flex-grow:1; overflow-y:auto"></div>
+
+            <div class="panel-title">System Event Log</div>
+            <div id="event-log"></div>
+        </div>
+
+        <!-- Center Panel: VFS & RAM -->
+        <div class="panel">
+            <div class="panel-title">VFS Physical Block Map (Frag: <span id="t-frag">0%</span>)</div>
+            <div id="vfs-map" class="vfs-grid"></div>
+            <div class="panel-title">Active Execution (RAM Slots)</div>
+            <div id="ram-grid" class="ram-grid"></div>
+            <div class="panel-title">Drive Contents</div>
+            <div id="file-list" style="overflow-y:auto; flex-grow:1"></div>
+        </div>
+
+        <!-- Right Panel: OC & Store -->
+        <div class="panel">
+            <div class="panel-title">Hardware Overclocking</div>
+            <div id="cpu-list"></div>
+            
+            <div class="hw-card">
+                <div style="display:flex; justify-content:space-between"><span>RAM BUS</span><span id="t-ram-oc">1.0x</span></div>
+                <input type="range" min="1" max="2.5" step="0.1" value="1" onchange="eel.set_oc('ram', 0, this.value)(); refresh();" style="width:100%">
+            </div>
+            <div class="hw-card">
+                <div style="display:flex; justify-content:space-between"><span>VFS BUS</span><span id="t-storage-oc">1.0x</span></div>
+                <input type="range" min="1" max="2.5" step="0.1" value="1" onchange="eel.set_oc('storage', 0, this.value)(); refresh();" style="width:100%">
+            </div>
+
+            <div class="panel-title" style="margin-top:15px">Software & Hardware Store</div>
+            <div id="store-list" style="overflow-y:auto; flex-grow:1"></div>
+        </div>
+    </div>
+    <div class="scanlines"></div>
+
+    <script>
+        let selectedTool = null;
+        async function refresh() {
+            const s = await eel.get_state()();
+            const gw = s.gateway;
+            document.getElementById('credits').innerText = gw.credits + "c";
+            document.getElementById('t-heat').innerText = gw.heat.toFixed(1) + "°C";
+            document.getElementById('f-heat').style.width = (gw.heat / 100 * 100) + "%";
+            document.getElementById('t-power').innerText = Math.round(gw.power_draw) + "W / " + gw.power_capacity + "W";
+            document.getElementById('f-power').style.width = (gw.power_draw / gw.power_capacity * 100) + "%";
+            document.getElementById('t-frag').innerText = (gw.fragmentation * 100).toFixed(1) + "%";
+            document.getElementById('t-ram-oc').innerText = gw.ram_overclock.toFixed(1) + "x";
+            document.getElementById('t-storage-oc').innerText = gw.storage_overclock.toFixed(1) + "x";
+
+            document.getElementById('event-log').innerHTML = gw.events.map(e => `<div>${e}</div>`).join('');
+
+            const vMap = document.getElementById('vfs-map'); vMap.innerHTML = '';
+            s.block_map.forEach(type => {
+                const b = document.createElement('div'); b.className = 'vfs-block ' + type;
+                vMap.appendChild(b);
+            });
+
+            const rGrid = document.getElementById('ram-grid'); rGrid.innerHTML = '';
+            for(let i=0; i<gw.ram_slots; i++) {
+                const t = s.tasks[i];
+                const d = document.createElement('div');
+                d.className = 'ram-slot' + (t ? ' active' : '') + (selectedTool && selectedTool.id === (t?t.id:null) ? ' selected' : '');
+                d.innerHTML = t ? `<b>${t.name.slice(0,4)}</b>` : 'IDLE';
+                if(t) d.onclick = () => { selectedTool = t; document.getElementById('tool-cursor').innerText = t.name; document.getElementById('tool-cursor').classList.remove('hidden'); refresh(); };
+                rGrid.appendChild(d);
+            }
+
+            document.getElementById('file-list').innerHTML = s.vfs.map(f => `
+                <div class="item-row" onclick="apply('${f.id}')">
+                    <span>${f.name}</span>
+                    <span>${f.size_gq}Gq <button class="btn" onclick="event.stopPropagation(); eel.launch('${f.id}')(); refresh();">RUN</button></span>
+                </div>
+            `).join('');
+
+            document.getElementById('task-list').innerHTML = s.tasks.map(t => `
+                <div class="task-card">
+                    <div style="display:flex; justify-content:space-between">
+                        <b>${t.name}</b>
+                        <button class="btn" style="color:red" onclick="eel.kill('${t.id}')(); refresh();">X</button>
+                    </div>
+                    <div style="font-size:10px; color:#888">CPU: ${t.ghz_share.toFixed(1)}GHz</div>
+                    <div class="progress-micro"><div class="progress-micro-fill" style="width:${t.progress}%"></div></div>
+                    <div style="display:flex; align-items:center; gap:5px">
+                        <small>PRIORITY:</small>
+                        <input type="range" min="0.1" max="5.0" step="0.1" value="${t.priority}" onchange="eel.set_priority('${t.id}', this.value)(); refresh();" style="flex-grow:1">
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('cpu-list').innerHTML = gw.cpus.map(c => `
+                <div class="hw-card">
+                    <div style="display:flex; justify-content:space-between"><span>CPU #${c.id}</span><span>${c.speed.toFixed(1)}GHz</span></div>
+                    <div class="health-bar"><div class="health-fill" style="width:${c.health}%; background:${c.health > 50 ? '#0f0' : '#f00'}"></div></div>
+                    <input type="range" min="1" max="2.5" step="0.1" value="${c.overclock}" onchange="eel.set_oc('cpu', ${c.id}, this.value)(); refresh();" style="width:100%">
+                </div>
+            `).join('');
+
+            document.getElementById('store-list').innerHTML = s.store.map(i => `
+                <div class="item-row"><span>${i.name}</span><span>${i.cost}c <button class="btn" onclick="eel.buy('${i.id}')(); refresh();">BUY</button></span></div>
+            `).join('');
+        }
+
+        async function apply(fid) {
+            if(!selectedTool) return;
+            const r = await eel.action(selectedTool.name, fid)();
+            if(r.msg) alert(r.msg);
+            // Right-click logic handles deselection, normal tool usage also clears
+            selectedTool = null; document.getElementById('tool-cursor').classList.add('hidden'); refresh();
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 2) { // Right Click
+                selectedTool = null;
+                document.getElementById('tool-cursor').classList.add('hidden');
+                refresh();
+            }
+        });
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        window.addEventListener('mousemove', e => { const c = document.getElementById('tool-cursor'); if(selectedTool) { c.style.left = (e.clientX+15)+"px"; c.style.top = (e.clientY+15)+"px"; } });
+        window.addEventListener('load', () => { refresh(); setInterval(refresh, 1000); });
+    </script>
+</body>
+</html>

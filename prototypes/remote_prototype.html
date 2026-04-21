@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>High-Fidelity Remote Interface v3.0</title>
+    <style>
+        :root { --p-blue: #0000ff; --b-blue: #00aaff; --d-blue: #000044; --cyan: #66ccff; --green: #00ff00; --red: #ff3333; --orange: #ffaa00; --yellow: #ffff00; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Consolas', monospace; overflow: hidden; height: 100vh; width: 100vw; }
+        #tool-cursor { position: fixed; pointer-events: none; z-index: 9999; background: rgba(0, 0, 255, 0.8); color: white; border: 1px solid white; padding: 2px 8px; font-weight: bold; box-shadow: 0 0 10px white; }
+        #container { display: grid; grid-template-columns: 250px 1fr; grid-template-rows: 80px 1fr; height: 100vh; padding: 10px; gap: 10px; }
+        #hud-remote { grid-column: 1/3; border: 1px solid var(--p-blue); background: rgba(0, 0, 68, 0.2); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .security-stack { display: flex; gap: 20px; }
+        .sec-bar { height: 12px; border: 1px solid #333; background: #050505; width: 150px; }
+        .sec-fill { height: 100%; width: 100%; } .active-blue { background: var(--p-blue); } .active-red { background: var(--red); } .active-green { background: var(--green); }
+        #local-tools { border: 1px solid var(--p-blue); background: rgba(0, 0, 68, 0.1); padding: 15px; }
+        .tool-chip { background: linear-gradient(180deg, #000088 0%, #000022 100%); border: 1px solid var(--p-blue); color: #7777aa; padding: 8px; margin-bottom: 5px; cursor: pointer; font-size: 11px; text-align: center; position: relative; font-weight: bold; text-shadow: 0 0 5px black; }
+        .tool-chip.active { color: #ffffff; border-color: var(--b-blue); }
+        .tool-chip.selected { border-color: white; box-shadow: 0 0 10px white; color: #ffffff; }
+        .tool-indicator { position: absolute; left: 5px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: #222; }
+        .tool-chip.active .tool-indicator { background: var(--green); box-shadow: 0 0 5px var(--green); }
+        
+        #remote-workspace { border: 1px solid var(--p-blue); background: #000; position: relative; }
+        .view-tab-bar { position: absolute; top: 0; left: 0; width: 100%; height: 30px; display: flex; border-bottom: 1px solid var(--p-blue); }
+        .view-tab { padding: 0 20px; display: flex; align-items: center; font-size: 10px; font-weight: bold; color: #444; border-right: 1px solid var(--p-blue); cursor: not-allowed; }
+        .view-tab.unlocked { color: #888; cursor: pointer; } .view-tab.active { background: var(--d-blue); color: white !important; }
+        .view-content { position: absolute; inset: 30px 0 0 0; padding: 20px; }
+        .login-box { width: 350px; border: 1px solid var(--p-blue); padding: 30px; background: rgba(0, 0, 68, 0.3); text-align: center; margin: 100px auto; }
+        .input-target { width: 100%; height: 35px; background: #000; border: 1px solid var(--p-blue); color: #fff; display: flex; align-items: center; justify-content: center; cursor: crosshair; }
+        .input-target.cracking { border-color: var(--orange); }
+        .vfs-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; padding: 10px; border: 1px solid #222; }
+        .vfs-block { aspect-ratio: 1; background: #111; border: 1px solid #222; cursor: crosshair; position: relative; }
+        .vfs-block.tool { background: var(--p-blue); } .vfs-block.data { background: var(--orange); }
+        .vfs-block.cracking::after { content: ''; position: absolute; inset: 0; background: rgba(255,170,0,0.4); }
+        .log-row { display: flex; gap: 15px; padding: 8px; border-bottom: 1px solid #111; font-size: 12px; cursor: crosshair; position: relative; }
+        .log-row.cracking { background: rgba(255,51,51,0.2); }
+        .progress-overlay { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--orange); transition: width 0.5s; }
+        .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 1000; }
+        .hidden { display: none !important; }
+        
+        #trace-container { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 400px; text-align: center; z-index: 500; }
+        #trace-bar { border: 1px solid var(--red); height: 10px; background: rgba(255,0,0,0.1); margin-top: 5px; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+        #trace-fill { background: var(--red); height: 100%; width: 0%; transition: width 1s linear; }
+        
+        #game-over-overlay { position: fixed; inset: 0; background: rgba(100,0,0,0.8); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-shadow: 0 0 20px black; }
+        .glitch-text { font-size: 48px; font-weight: bold; letter-spacing: 10px; }
+    </style>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+<body>
+    <div id="game-over-overlay" class="hidden">
+        <div class="glitch-text">CONNECTION TERMINATED</div>
+        <h2 id="go-reason">SYSTEM DISAVOWED</h2>
+        <button class="tool-chip" style="margin-top:40px; border-color:white; color:white;" onclick="location.reload()">REBOOT GATEWAY</button>
+    </div>
+    <div id="tool-cursor" class="hidden">TOOL</div>
+    <div id="container">
+        <div id="hud-remote">
+            <div class="server-info"><h2 id="srv-name">GATEWAY</h2><span id="srv-ip">127.0.0.1</span></div>
+            <div class="security-stack">
+                <div class="sec-bar"><div id="bar-proxy" class="sec-fill active-blue"></div></div>
+                <div class="sec-bar"><div id="bar-firewall" class="sec-fill active-red"></div></div>
+                <div class="sec-bar"><div id="bar-monitor" class="sec-fill active-green"></div></div>
+            </div>
+            <button class="tool-chip" style="margin:0; padding:5px 15px; border-color:var(--red); color:white;" onclick="window.close()">DISCONNECT</button>
+        </div>
+        <div id="local-tools"><div id="tool-list"></div></div>
+        <div id="remote-workspace">
+            <div id="trace-container" class="hidden">
+                <div style="color:var(--red); font-weight:bold; font-size:12px;">ACTIVE TRACE DETECTED</div>
+                <div id="trace-bar"><div id="trace-fill"></div></div>
+            </div>
+            <div class="view-tab-bar">
+                <div class="view-tab active unlocked" id="tab-login" onclick="switchView('login')">LOGIN</div>
+                <div class="view-tab" id="tab-files" onclick="switchView('files')">FILE SERVER</div>
+                <div class="view-tab" id="tab-logs" onclick="switchView('logs')">LOG SERVER</div>
+                <div class="view-tab unlocked" id="tab-tactical" onclick="switchView('tactical')">TACTICAL</div>
+            </div>
+            <div class="view-content">
+                <div id="view-login"><div class="login-box" id="login-container">
+                    <h3>ACCESS DENIED</h3><div id="password-target" class="input-target" onclick="applyTool('password','password')">********</div>
+                    <div id="crack-progress" class="hidden" style="margin-top:10px">0%</div>
+                </div></div>
+                <div id="view-files" class="hidden"><div class="vfs-grid" id="vfs-grid"></div></div>
+                <div id="view-logs" class="hidden"><div class="log-list" id="log-list"></div></div>
+                <div id="view-tactical" class="hidden">
+                    <h3 style="color:var(--b-blue); border-bottom:1px solid var(--p-blue); padding-bottom:10px;">WORLD MANIFESTS</h3>
+                    <div id="manifest-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="scanlines"></div>
+    <script>
+        let state = null, selectedTool = null;
+        async function refresh() {
+            state = await eel.get_remote_state()();
+            document.getElementById('srv-name').innerText = state.server.name.toUpperCase();
+            document.getElementById('srv-ip').innerText = state.server.ip;
+            
+            document.getElementById('tool-list').innerHTML = state.local_ram.map(t => `
+                <div class="tool-chip ${t.active?'active':''} ${selectedTool?.id===t.id?'selected':''}" 
+                     onclick="handleToolClick('${t.id}')">
+                    <div class="tool-indicator"></div>
+                    ${t.name.toUpperCase()}
+                </div>`).join('');
+
+            // Files Grid
+            const grid = document.getElementById('vfs-grid'), blockStates = new Array(120).fill({type:'free', id:null});
+            state.server.files.forEach(f => f.blocks.forEach(b => blockStates[b] = {type:f.type, id:f.id}));
+            grid.innerHTML = blockStates.map((b,i) => {
+                const task = state.tasks.find(t => t.target_id === b.id);
+                return `<div class="vfs-block ${b.type} ${task?'cracking':''}" onclick="applyTool('file','${b.id}')">${task?`<div class='progress-overlay' style='width:${task.progress}%'></div>`:''}</div>`;
+            }).join('');
+
+            // Logs
+            document.getElementById('log-list').innerHTML = state.server.logs.map((l,i) => {
+                const task = state.tasks.find(t => t.target_id === i.toString());
+                
+                // IP Discovery mechanic
+                const ipRegex = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
+                let fromContent = l.from;
+                if (ipRegex.test(l.from)) {
+                    fromContent += ` <button class="tool-chip" style="padding:2px 5px; font-size:10px;" onclick="saveIp(event, '${l.from}')">[+] ADD TO MAP</button>`;
+                }
+
+                return `<div class="log-row ${l.type} ${task?'cracking':''}" onclick="applyTool('log',${i})"><span>${l.time}</span><span>${fromContent}</span><span>${l.action}</span>${task?`<div class='progress-overlay' style='width:${task.progress}%'></div>`:''}</div>`;
+            }).join('');
+
+            const crackTask = state.tasks.find(t => t.target_id === 'password');
+            if (state.server.is_unlocked) {
+                document.getElementById('login-container').innerHTML = `<h3 style="color:var(--green)">SYSTEM ACCESS GRANTED</h3>`;
+                document.getElementById('tab-files').classList.add('unlocked');
+                document.getElementById('tab-logs').classList.add('unlocked');
+            } else if (crackTask) {
+                document.getElementById('crack-progress').classList.remove('hidden');
+                document.getElementById('crack-progress').innerText = `CRACKING: ${crackTask.progress}%`;
+                document.getElementById('password-target').innerText = Math.random().toString(36).substring(7).toUpperCase();
+            }
+
+            // Trace Logic
+            if (state.trace_active && state.show_trace_warning) {
+                document.getElementById('trace-container').classList.remove('hidden');
+                document.getElementById('trace-fill').style.width = state.trace_progress + '%';
+            } else {
+                document.getElementById('trace-container').classList.add('hidden');
+            }
+
+            // Game Over Logic
+            if (state.game_over) {
+                document.getElementById('game-over-overlay').classList.remove('hidden');
+                document.getElementById('go-reason').innerText = state.game_over_reason;
+            }
+
+            // World Manifests
+            if (state.manifests) {
+                document.getElementById('manifest-list').innerHTML = state.manifests.map(m => `
+                    <div style="border:1px solid #222; margin-bottom:10px; padding:10px; background:rgba(0,170,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span style="color:var(--yellow); font-weight:bold;">${m.id}</span>
+                            <span style="color:${m.status === 'HIJACKED' ? 'var(--red)' : 'var(--green)'}">${m.status}</span>
+                        </div>
+                        <div style="font-size:11px; color:#aaa;">
+                            CARRIER: <span style="color:white">${m.carrier}</span><br>
+                            CARGO: <span style="color:white">${m.cargo}</span> ($${m.value.toLocaleString()})<br>
+                            ROUTE: <span style="color:white">${m.origin} -> ${m.dest}</span>
+                        </div>
+                        ${m.status === 'IN_TRANSIT' ? `
+                            <button class="tool-chip" style="width:100%; margin-top:10px; border-color:var(--red); color:white;" 
+                                    onclick="attemptHijack('${m.id}')">TACTICAL HIJACK</button>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function attemptHijack(id) {
+            const res = await eel.hijack_shipment(id)();
+            if (res.success) {
+                alert("HIJACK SUCCESSFUL: World events triggered.");
+            } else {
+                alert("HIJACK FAILED: " + res.msg);
+            }
+            refresh();
+        }
+
+        async function saveIp(event, ip) {
+            event.stopPropagation(); // prevent triggering the log tool apply
+            const res = await eel.save_ip(ip)();
+            alert(res.msg);
+        }
+
+        async function handleToolClick(id) {
+            const tool = state.local_ram.find(t => t.id === id);
+            if (!tool) return;
+            
+            if (tool.active) {
+                // If already active, select it for targeting
+                selectTool(id);
+            } else {
+                // If not active, load it into RAM
+                await eel.toggle_tool(id)();
+                refresh();
+            }
+        }
+
+        function selectTool(id) { 
+            const tool = state.local_ram.find(t => t.id === id);
+            if (!tool || !tool.active) return;
+            selectedTool = tool; 
+            document.getElementById('tool-cursor').innerText = selectedTool.name.toUpperCase(); 
+            document.getElementById('tool-cursor').classList.remove('hidden'); 
+            refresh(); 
+        }
+        async function applyTool(type, id) {
+            if (!selectedTool) return;
+            const res = await eel.execute_hack(selectedTool.name, type, id)();
+            if (res.msg) alert(res.msg);
+            selectedTool = null; document.getElementById('tool-cursor').classList.add('hidden'); refresh();
+        }
+        function switchView(view) {
+            if (!state.server.is_unlocked && view !== 'login') return;
+            document.querySelectorAll('.view-content > div').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('view-' + view).classList.remove('hidden');
+            document.getElementById('tab-' + view).classList.add('active');
+        }
+        window.addEventListener('mousedown', e => { if(e.button===2){ selectedTool=null; document.getElementById('tool-cursor').classList.add('hidden'); refresh(); } });
+        window.addEventListener('contextmenu', e => e.preventDefault());
+        window.addEventListener('mousemove', e => { if(selectedTool){ const c = document.getElementById('tool-cursor'); c.style.left = (e.clientX+15)+"px"; c.style.top = (e.clientY+15)+"px"; } });
+        window.addEventListener('load', () => { refresh(); setInterval(refresh, 1000); });
+    </script>
+</body>
+</html>
