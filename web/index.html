@@ -78,11 +78,12 @@
             transition: transform 0.2s, opacity 0.2s;
         }
         .app-window.open { display: flex; border-color: #003366; }
-        .app-window.active { border-color: var(--cyan); box-shadow: 0 0 30px rgba(0,170,255,0.25); z-index: 2000 !important; }
+        .app-window.active { border-color: var(--cyan); box-shadow: 0 0 30px rgba(0,170,255,0.25); }
         .app-window.active .title-bar { background: #002244; color: white; }
         .app-window.maximized { border-width: 1px 0; box-shadow: none; }
         
         #map-app-container { background: #020408; }
+        .leaflet-container { background: #020408 !important; }
 
         .resize-handle {
             position: absolute; right: 0; bottom: 0; width: 10px; height: 10px;
