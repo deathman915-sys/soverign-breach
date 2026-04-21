@@ -244,9 +244,9 @@ class ScreenHTMLBuilder:
 
         if not sections:
             return (
-                f'<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
-                f'<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
-                f'No hardware available</div></div>'
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No hardware available</div></div>'
             )
 
         content = "".join(sections)
@@ -306,6 +306,41 @@ class ScreenHTMLBuilder:
             f'<div style="width:100%; max-width:800px;">'
             f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">AGENT RANKINGS</div>'
             f'<div style="display:flex; flex-direction:column; gap:4px;">{items}</div></div></div>'
+        )
+
+    @staticmethod
+    def build_finance_html(state: GameState) -> str:
+        """Generates the main financial summary screen."""
+        player_accs = [a for a in state.bank_accounts if a.is_player]
+        
+        if not player_accs:
+            return (
+                '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
+                '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
+                'No accounts linked to authorized agent profile</div></div>'
+            )
+            
+        items = "".join(
+            f'<div style="border:1px solid var(--p-blue); padding:15px; margin-bottom:10px; '
+            f'display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,30,0.4);">'
+            f'<div>'
+            f'<div style="color:#fff; font-size:12px; font-weight:bold; letter-spacing:1px;">#{a.account_number}</div>'
+            f'<div style="color:var(--text-dim); font-size:9px; margin-top:2px;">{a.bank_ip}</div>'
+            f'{f"<div style=\\\"color:var(--orange); font-size:8px; margin-top:4px;\\\">HOT RATIO: {(a.hot_ratio*100):.0f}%</div>" if a.hot_ratio > 0.05 else ""}'
+            f'</div>'
+            f'<div style="text-align:right;">'
+            f'<div style="color:var(--green); font-size:16px; font-family:monospace; font-weight:bold;">{a.balance:,}c</div>'
+            f'{f"<div style=\\\"color:var(--red); font-size:9px;\\\">LOAN: {a.loan_amount:,}c</div>" if a.loan_amount > 0 else ""}'
+            f'</div>'
+            f'</div>'
+            for a in player_accs
+        )
+        
+        return (
+            f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center; overflow-y:auto; height:100%;">'
+            f'<div style="width:100%; max-width:800px;">'
+            f'<div style="color:var(--cyan); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #222; padding-bottom:5px;">FINANCIAL SUMMARY</div>'
+            f'{items}</div></div>'
         )
 
     @staticmethod
@@ -969,3 +1004,7 @@ class RemoteController:
             return {"success": False, "error": "Invalid reorder"}
         self.state.bounce.hops = list(new_order)
         return {"success": True, "chain": list(self.state.bounce.hops)}
+
+    def build_finance_html(self) -> str:
+        """Helper to call the static builder with current state."""
+        return ScreenHTMLBuilder.build_finance_html(self.state)

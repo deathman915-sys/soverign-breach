@@ -196,10 +196,33 @@ function updateHUD() {
     if (!gameState || !gameState.clock || !gameState.player) return;
     const el = (id) => document.getElementById(id);
     if (el('clock-display')) el('clock-display').textContent = gameState.clock.full_str || '00:00:00';
-    if (el('player-balance')) el('player-balance').textContent = gameState.player.balance_str || '0c';
+    
+    // Financial HUD
+    if (el('player-balance')) {
+        const bal = el('player-balance');
+        bal.textContent = gameState.player.balance_str || '0c';
+        // Pulse red/orange if hot ratio is high
+        if (gameState._hot_ratio > 0.1) {
+            bal.style.color = "var(--orange)";
+            bal.style.textShadow = "0 0 5px var(--red)";
+        } else {
+            bal.style.color = "var(--green)";
+            bal.style.textShadow = "none";
+        }
+    }
+
     if (el('player-handle')) el('player-handle').textContent = gameState.player.handle;
     if (el('taskbar-clock')) el('taskbar-clock').textContent = gameState.clock.time_str || '00:00:00';
-    if (el('neuromancer-display')) el('neuromancer-display').textContent = gameState.player.neuromancer_str || '';
+    
+    // Neuromancer & Credit HUD
+    if (el('neuromancer-display')) {
+        let text = gameState.player.neuromancer_str || '';
+        if (gameState.player.credit_score !== undefined) {
+            text += ` | CS:${gameState.player.credit_score}`;
+        }
+        el('neuromancer-display').textContent = text;
+    }
+
     if (el('connection-status')) el('connection-status').textContent = `LOCAL: ${gameState.player.localhost_ip || '127.0.0.1'}`;
 }
 
@@ -529,6 +552,8 @@ function renderApp(appId, data) {
         case 'terminal': renderTerminal(container, data); break;
         case 'memory_banks': renderMemoryBanks(container, data); break;
         case 'tutorial': renderTutorial(container, data); break;
+        case 'news': renderNews(container, data); break;
+        case 'rankings': renderRankings(container, data); break;
     }
 }
 
@@ -608,8 +633,8 @@ async function initMapApp(data) {
         resizeObserver.observe(container);
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { 
-            noWrap: false, // ABOLISH THE VOID: Allow wrapping for wide screens
-            bounds: [[-85, -280], [85, 280]]
+            noWrap: true, // RESTORE SINGULARITY: No horizontal world repeats
+            bounds: [[-85, -180], [85, 180]]
         }).addTo(mapInstance);
         
         lastMapNodes.forEach(n => {
@@ -706,7 +731,14 @@ function alterField(recordName, fieldName, theme) {
     const newVal = prompt(`New value for ${fieldName}:`, r.fields[fieldName] || ''); if (newVal !== null) { eel.alter_record(currentRemoteIp, recordName, fieldName, newVal)().then(res => { if (res.success) { showNotification("Updated", "info"); refreshRemote(); } else showNotification("Failed", "critical"); }); }
 }
 
-function renderFinance(el, data) { const accs = data.accounts || []; el.innerHTML = `<div style="padding:15px; height:100%; overflow-y:auto;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:15px;">FINANCES</div>${accs.map(a => `<div style="border:1px solid var(--p-blue); padding:12px; margin-bottom:8px; display:flex; justify-content:space-between;"><div><div style="color:#fff;">#${a.account_number}</div><div style="color:var(--text-dim); font-size:8px;">${a.bank_ip}</div></div><div style="color:var(--green); font-size:14px;">${a.balance.toLocaleString()}c</div></div>`).join('') || '<div style="color:var(--text-dim); text-align:center;">No accounts linked</div>'}</div>`; }
+async function renderFinance(el, data) { 
+    try {
+        const html = await eel.get_finance_html()();
+        el.innerHTML = html;
+    } catch (e) {
+        el.innerHTML = `<div style="color:var(--red); padding:20px; text-align:center;">RENDER ERROR: ${e.message}</div>`;
+    }
+}
 function renderHardware(el, data) {
     const heatPct = Math.min(100, ((data.heat || 0) / (data.max_heat || 90)) * 100).toFixed(1);
     const powerPct = data.psu_capacity > 0 ? ((data.power_draw / data.psu_capacity) * 100).toFixed(1) : 0;

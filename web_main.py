@@ -237,6 +237,10 @@ def get_finance_state():
     return {"accounts": get_player_accounts(engine.state)}
 
 @eel.expose
+def get_finance_html():
+    return get_rc().build_finance_html()
+
+@eel.expose
 def get_rankings():
     from core.npc_engine import get_rankings
     return get_rankings(engine.state)
@@ -407,7 +411,8 @@ def get_manifests():
 @eel.expose
 def hijack_shipment(manifest_id: str, squad_id: str = None):
     manifest = next((m for m in engine.state.world.manifests if m.id == manifest_id), None)
-    if not manifest: return {"success": False, "error": "Manifest not found"}
+    if not manifest:
+        return {"success": False, "error": "Manifest not found"}
     
     # Try to find the squad
     squad = next((s for s in engine.state.world.pmc_squads if s.id == squad_id), None)
@@ -586,7 +591,8 @@ engine.events.connect("tick_completed", on_tick)
 
 def on_game_over(reason):
     """Handle game over events and push to frontend."""
-    if not hasattr(eel, "update_hud"): return
+    if not hasattr(eel, "update_hud"):
+        return
     try:
         if not hasattr(eel, "trigger_event"):
             log.warning("Eel trigger_event not exposed, skipping game_over event")
