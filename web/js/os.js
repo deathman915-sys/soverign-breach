@@ -266,16 +266,28 @@ async function openApp(appId) {
         const win = document.createElement('div');
         win.className = 'app-window open';
         win.id = `window-${appId}`;
-        win.style.width = appDef.window_size[0] + 'px';
-        win.style.height = appDef.window_size[1] + 'px';
-        win.style.top = (40 + Object.keys(openWindows).length * 30) + 'px';
-        win.style.left = (180 + Object.keys(openWindows).length * 30) + 'px';
+
+        // Phase 24: High-Fidelity Workspace Scaling
+        if (appId === 'map') {
+            // Map defaults to full screen
+            win.style.width = '100%';
+            win.style.height = 'calc(100% - 66px)'; // HUD(30) + Taskbar(36)
+            win.style.top = '30px';
+            win.style.left = '0px';
+            win.classList.add('maximized');
+        } else {
+            win.style.width = appDef.window_size[0] + 'px';
+            win.style.height = appDef.window_size[1] + 'px';
+            win.style.top = (40 + Object.keys(openWindows).length * 30) + 'px';
+            win.style.left = (180 + Object.keys(openWindows).length * 30) + 'px';
+        }
         win.style.zIndex = ++zIndexCounter;
 
         win.innerHTML = `
             <div class="title-bar" onmousedown="startDrag(event, document.getElementById('window-${appId}'))">
                 <span>${appDef.name}</span>
                 <div class="win-controls">
+                    <button class="win-btn" onclick="toggleMaximize('${appId}')">□</button>
                     <button class="win-btn" onclick="minimizeApp('${appId}')">_</button>
                     <button class="win-btn win-close" onclick="closeApp('${appId}')">X</button>
                 </div>
@@ -306,6 +318,36 @@ function restoreApp(appId) {
     win.isMinimized = false;
     win.el.classList.remove('minimized');
     focusWindow(appId);
+}
+
+function toggleMaximize(appId) {
+    const win = openWindows[appId];
+    if (!win) return;
+    
+    if (win.el.classList.contains('maximized')) {
+        // Restore
+        win.el.classList.remove('maximized');
+        win.el.style.width = win.oldWidth || '600px';
+        win.el.style.height = win.oldHeight || '400px';
+        win.el.style.top = win.oldTop || '100px';
+        win.el.style.left = win.oldLeft || '200px';
+    } else {
+        // Maximize
+        win.oldWidth = win.el.style.width;
+        win.oldHeight = win.el.style.height;
+        win.oldTop = win.el.style.top;
+        win.oldLeft = win.el.style.left;
+        
+        win.el.classList.add('maximized');
+        win.el.style.width = '100%';
+        win.el.style.height = 'calc(100% - 66px)'; // HUD(30) + Taskbar(36)
+        win.el.style.top = '30px';
+        win.el.style.left = '0px';
+    }
+    
+    if (appId === 'map' && mapInstance) {
+        setTimeout(() => mapInstance.invalidateSize(), 200);
+    }
 }
 
 function closeApp(appId) {
