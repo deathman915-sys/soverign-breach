@@ -19,14 +19,14 @@ This document describes how the core Python modules and Web frontend files inter
 
 These engines are called by `engine.py` during each tick:
 
--   **`core/npc_engine.py`**: Simulates government agencies scanning internal logs for crimes. **0.5% per-tick crime discovery rate** (~1 investigation per 200 ticks per server). If a crime is found, starts a PassiveTrace backwards.
+-   **`core/npc_engine.py`**: Simulates government agencies scanning public logs for crimes. **0.5% per-tick crime discovery rate** (~1 investigation per 200 ticks per server). If a crime is found, starts a PassiveTrace backwards. (Fixed in Phase 22 to scan public logs instead of internal backups).
 -   **`core/logistics_engine.py`**: Generates and moves Aircraft, Ships, and Trucks. It creates temporary `Computer` nodes in `GameState` for vehicles in transit.
 -   **`core/pmc_engine.py`**: Handles tactical combat math and interceptions. It emits events (e.g., `hijack_success`) via the `EventEmitter`.
--   **`core/finance_engine.py`**: Adjusts stock prices based on ambient volatility and world events (like a successful PMC hijack). Handles bank account creation, loans, and transfers.
--   **`core/bank_forensics.py`**: Works alongside the Finance Engine to generate cryptographic hashes for every transaction and provides tracking tools to trace money through multiple accounts.
+-   **`core/finance_engine.py`**: Adjusts stock prices based on ambient volatility and world events. Handles bank account creation (including **Offshore Accounts**), loans with **5,000 tick deadlines**, and **Laundering**. Calculates global `_hot_ratio` and executes **Asset Repossession** scripts on loan default.
+-   **`core/bank_forensics.py`**: Generates cryptographic hashes and **Ghost Logs** (non-deletable forensic entries in bank internal backups) for every transaction.
 -   **`core/news_engine.py`**: Generates procedural text articles when specific world events are triggered.
 -   **`core/world_sim.py`**: Handles background world events (blackouts, stocks) and **Internal AI Maintenance**. Every 50 ticks, it checks for log expiration (400 ticks), re-enables disabled/bypassed security systems, and rotates compromised admin passwords.
--   **`core/task_engine.py`**: Manages progress for all active hacking tasks. Supports **Software Versioning** with performance multipliers. Includes **Bypass** vs **Disable** logic for security layers. Supports Log_UnDeleter and Log_Modifier (framing).
+-   **`core/task_engine.py`**: Manages progress for all active hacking tasks. Supports **Software Versioning** with performance multipliers. Includes **Bypass** vs **Disable** logic for security layers. Supports Log_UnDeleter, Log_Modifier (framing), and **Password_Breaker difficulty syncing**.
 -   **`core/store_engine.py`**: Handles hardware/software purchases. Supports **Modular Hardware Upgrades** (individual CPUs, Modems, Memory) and addon purchases (Self Destruct, Motion Sensor). Syncs Gateway storage with VFS capacity.
 -   **`core/trace_engine.py`**: Handles connection tracing. Implements **Access-Level Modifiers** (0.1x to 1.6x) based on account status (None, User, Admin, Bank Admin).
 -   **`core/connection_manager.py`**: Manages connections and logs. **Disconnect() resets all temporary security bypasses world-wide**, matching original protocol fragility.
@@ -34,11 +34,11 @@ These engines are called by `engine.py` during each tick:
 -   **`core/security_engine.py`**: Handles connection security checks and **System Self-Repair**. Periodically rotates admin passwords and re-enables bypassed security systems for servers tracked in `state.compromised_ips`.
 -   **`core/lan_engine.py`**: Handles LAN topology scanning, node probing, and spoofing.
 -   **`core/event_scheduler.py`**: Schedules future events (subscription fees, mission generation, warnings, fines, arrests) and processes them on tick. **Phase 15+: Full arrest flow with balance seizure, rating reset, credit rating penalty, neuromancer drift, news generation, jail time processing, disavowed threshold (3 arrests → profile deletion countdown). Phase 16: Bail/Buyout system — `pay_bail()` reduces jail time or disavow countdown by 50% for a fee.**
--   **`core/log_suspicion.py`**: Escalates access log suspicion levels over time (Not Suspicious → Suspicious → Suspicious and Noticed → Under Investigation). Auth logs escalate 2x faster, connection logs 0.5x slower. Deleted logs stop escalating.
+-   **`core/log_suspicion.py`**: Escalates access log suspicion levels over time. **Phase 22: Added 'Hot Credits' multiplier (1x-2x speed) based on the player's laundered fund ratio.**
 -   **`core/gateway_nuke.py`**: Emergency self-destruct for the player's gateway. Destroys all VFS files, melts hardware, and triggers game over.
 -   **`core/neuromancer.py`**: Tracks moral alignment rating (-100 to +100) based on mission types. 11 named levels from Revolutionary to Paragon.
 -   **`core/warning_events.py`**: Checks for HIGH suspicion logs and emits warning events. Each log only warns once.
--   **`core/bank_robbery.py`**: Tracks illegal money transfers with 120-tick countdown timers. Emits warnings at halfway point and game-over on expiry. Can be cleared by deleting relevant logs.
+-   **`core/bank_robbery.py`**: Tracks illegal money transfers with 120-tick countdown timers. (Fixed in Phase 22: correctly purges timers on log deletion).
 
 ## 3. App Registry System (Modular Architecture)
 
@@ -67,7 +67,7 @@ Each application is a self-contained module that can be added/removed independen
 
 The UI is built as a consolidated Web OS using HTML/CSS/JS, centered around a virtual desktop paradigm matching Uplink's aesthetic.
 
--   **`web_main.py`**: The primary entry point and Eel bridge orchestrator. It initializes the `GameEngine`, exposes unified API functions to the frontend, manages the lifecycle of the simulation thread, and provides the `open_app(app_id)` endpoint for the app registry.
+-   **`web_main.py`**: The primary entry point and Eel bridge orchestrator. **Phase 22: Synchronized 8 previously broken bridges (News, Missions, Remote Management) and connected real-time task progress events to frontend pushes.**
 -   **`web/index.html`**: The unified frontend. Hosts the start menu, taskbar, HUD top bar, windows container, and login screen. No desktop icons — apps launched via START menu.
 -   **`web/js/os.js`**: The master OS controller. Handles app lifecycle, window management, start menu, taskbar, HUD updates, Leaflet map (as an app), and all app renderers.
 -   **`web/js/main.js`**: The remote view module. Handles remote terminal rendering when connected to a server.
@@ -84,8 +84,8 @@ To maintain decoupling, specialized controllers format simulation data for the U
 ### Python -> JS (Push)
 The Python engine periodically pushes the relevant slice of `GameState` to the frontend using `eel.update_state()` or specialized triggers:
 -   `update_hud(data)`: Pushes a **pre-formatted View-Model packet** every tick. Contains `time_str`, `date_str`, `balance_str`, `neuromancer_str`, and `trace` progress. Frontend performs zero formatting.
--   `update_tasks(tasks)`: Triggers hardware and remote app refreshes when task progress changes.
--   `trigger_event(evt)`: Signals world events. **Event types: `arrest` (shows arrest overlay with bail option), `disavowed` (shows disavowed overlay with delete button), `profile_deleted` (reloads page), `released` (jail release notification), `disavow_countdown` (countdown warning), `game_over` (legacy alert).**
+-   `update_tasks(tasks)`: Triggers hardware and remote app refreshes when task progress or completion events occur.
+-   `trigger_event(evt)`: Signals world events. **Includes `loan_default` and `bank_fee` event types.**
 
 ### JS -> Python (Unified Request)
 The frontend calls Python functions exposed via `@eel.expose`:
@@ -199,7 +199,7 @@ When a `pmc_engine` action succeeds, it emits an internal Python event. `engine.
 
 ## 7. Testing & Verification Infrastructure
 
-To ensure modularity and prevent regressions as the simulation scales, the project uses a multi-layered testing suite in the `tests/` directory (**480 tests**):
+To ensure modularity and prevent regressions as the simulation scales, the project uses a multi-layered testing suite in the `tests/` directory (**517 tests**):
 
 -   **`tests/test_core.py`**: Validates the `GameState` mediator, `NetworkGraph` pathfinding, and `VirtualFileSystem` block operations.
 -   **`tests/test_engines.py`**: Smoke tests for the main simulation loop, including the Task, Trace, Security engines, and mission negotiation.
@@ -240,6 +240,21 @@ To ensure modularity and prevent regressions as the simulation scales, the proje
 -   **`tests/test_dynamic_forensics.py`**: Passive trace forensic investigation flow with dynamic player IPs.
 -   **`tests/test_security_protocols.py`**: Security bypassing, Encrypter logic, and disconnection resets.
 -   **`tests/test_hardware_modular.py`**: Modular CPU slots, Modem upgrades, and RAM/Storage separation.
--   **`tests/test_world_alive.py`**: Computer AI maintenance (log expiry, security repair, password rotation).
+-   **`tests/test_world_alive.py`**: Computer AI maintenance (log expiry, security repair, password rotation). (Updated in Phase 22 for stability).
+-   **`tests/test_eel_bridges.py`**: AST-based parity test ensuring all JS calls have corresponding @eel.expose definitions.
+-   **`tests/test_finance_advanced.py`**: Verification of loan deadlines, offshore fees, and asset repossession logic.
+-   **`tests/test_laundering.py`**: Verification of 'Hot Credits' signatures, cleaning via bouncing/offshore, and cryptographic Ghost Logs.
 
-*(Current Test Count: 502 Passed)*
+*(Current Test Count: 517 Passed)*
+
+## 8. Modern Developer Toolkit
+The environment is equipped with high-fidelity CLI tools for Forge management:
+- **`rg` (Ripgrep)**: Surgical codebase search.
+- **`ruff`**: Lightning-fast structural audit and linting (100% compliance).
+- **`tokei`**: Codebase metrics and architectural mapping.
+- **`uv`**: High-performance Python package and environment management.
+- **`fzf`**: Fuzzy-finding navigation.
+- **`bat`**: Syntax-highlighted file inspection.
+- **`jq`**: Precision JSON profile analysis.
+- **`btm` (Bottom)**: Real-time system monitoring.
+
