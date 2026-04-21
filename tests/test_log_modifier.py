@@ -153,4 +153,4 @@ class TestLogScreenHTML:
         comp.internal_logs.clear()
 
         data = rc._render_log_screen(comp)
-        assert "Empty" in data["html"]
+        assert "Log buffer empty" in data["html"]

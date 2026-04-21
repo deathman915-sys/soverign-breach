@@ -364,7 +364,7 @@ class TestLinksHTML:
         rc.navigate_screen(C.IP_INTERNIC, C.SCREEN_LINKSSCREEN)
         data = rc.get_screen_data(C.IP_INTERNIC)
         html = data["html"]
-        assert "interactWithIP" in html or "Empty" in html or "No links" in html, \
+        assert "interactWithIP" in html or "No outbound links identified" in html, \
             f"Links HTML should show links or empty message. Got: {html[:200]}"
 
 

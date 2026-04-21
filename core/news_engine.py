@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import random
 import logging
+from html import escape
 
 from core.game_state import GameState, NewsItem
 from core.name_generator import generate_name
@@ -282,8 +283,22 @@ def _build_defaults(rng: random.Random) -> dict[str, str]:
             "InterNIC",
             "Stock Market System",
         ]),
-        "rating_name": "Intermediate",
+        "rating_name": "Intermediate", 
     }
+
+def _generate_ambient_article(state: GameState, current_tick: int, rng: random.Random) -> NewsItem:
+    """Generate a random news item using ambient templates."""
+    headline = rng.choice(_AMBIENT_HEADLINES)
+    body = rng.choice(_AMBIENT_BODIES)
+
+    news = NewsItem(
+        headline=headline,
+        body=body,
+        category="general",
+        tick_created=current_tick,
+    )
+    state.world.news.append(news)
+    return news
 
 def tick_news(state: GameState, current_tick: int) -> list[dict]:
     """Generate ambient/random news periodically."""
