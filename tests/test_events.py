@@ -7,6 +7,7 @@ and mission generation events.
 
 import sys
 import os
+import json
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -16,10 +17,12 @@ from core.event_scheduler import (
     schedule_event,
     process_events,
     schedule_initial_events,
+    schedule_trace_consequences,
     EVENT_SUBSCRIPTION,
     EVENT_MISSION_GENERATE,
     EVENT_WARNING,
     EVENT_FINE,
+    EVENT_ARREST,
 )
 
 
@@ -147,3 +150,44 @@ class TestScheduleInitialEvents:
         ]
         assert len(mission_events) == 1
         assert mission_events[0].trigger_tick == 1000
+
+
+class TestScheduleTraceConsequences:
+    def test_low_difficulty_schedules_warning_and_fine(self, state):
+        schedule_trace_consequences(state, "TargetComp", 1000, hack_difficulty=50.0)
+
+        # Should have 2 events: warning and fine
+        assert len(state.scheduled_events) == 2
+
+        warning = next(
+            e for e in state.scheduled_events if e.event_type == EVENT_WARNING
+        )
+        fine = next(e for e in state.scheduled_events if e.event_type == EVENT_FINE)
+
+        assert warning.trigger_tick == 1000 + 50
+        assert "TargetComp" in warning.data
+
+        assert fine.trigger_tick == 1000 + 500
+
+        fine_data = json.loads(fine.data)
+        assert fine_data["amount"] == 1000  # max(500, 50 * 20)
+        assert fine_data["computer_name"] == "TargetComp"
+
+    def test_high_difficulty_schedules_arrest(self, state):
+        schedule_trace_consequences(state, "TargetComp", 1000, hack_difficulty=150.0)
+
+        # Should have 3 events: warning, fine, and arrest
+        assert len(state.scheduled_events) == 3
+
+        arrest = next(e for e in state.scheduled_events if e.event_type == EVENT_ARREST)
+        assert arrest.trigger_tick == 1000 + 2000
+
+        arrest_data = json.loads(arrest.data)
+        assert arrest_data["computer_name"] == "TargetComp"
+
+    def test_fine_amount_minimum(self, state):
+        schedule_trace_consequences(state, "TargetComp", 1000, hack_difficulty=10.0)
+        fine = next(e for e in state.scheduled_events if e.event_type == EVENT_FINE)
+
+        fine_data = json.loads(fine.data)
+        assert fine_data["amount"] == 500  # max(500, 10 * 20)
