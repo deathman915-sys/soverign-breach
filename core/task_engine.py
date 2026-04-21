@@ -66,6 +66,164 @@ def _task_dict(
 
 
 # ======================================================================
+# Start a task - Handlers
+# ======================================================================
+def _start_password_breaker(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    computer = _resolve_computer(state, target_ip)
+    if computer is None:
+        raise ValueError(f"No computer found at IP {target_ip}")
+    password = td.get("password", "")
+    if not password:
+        username = td.get("target_id", "admin")
+        if computer.accounts and username in computer.accounts:
+            password = computer.accounts[username]
+        else:
+            # Get password from the computer's first password screen
+            for scr in computer.screens:
+                if scr.screen_type in (
+                    C.SCREEN_PASSWORDSCREEN,
+                    C.SCREEN_HIGHSECURITYSCREEN,
+                ):
+                    password = scr.data1 or ""
+                    break
+        if not password:
+            raise ValueError("No password to crack on this computer")
+    ticks_remaining = computer.hack_difficulty * len(password) * cpu_mod
+    ticks_per_char = computer.hack_difficulty * cpu_mod
+    new_td = {
+        "password": password,
+        "revealed": "",
+        "char_index": 0,
+        "ticks_per_char": ticks_per_char,
+        "ticks_into_char": 0.0,
+    }
+    return ticks_remaining, new_td
+
+
+def _start_dictionary_hacker(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    computer = _resolve_computer(state, target_ip)
+    if computer is None:
+        raise ValueError(f"No computer found at IP {target_ip}")
+    password = td.get("password", "")
+    if not password:
+        for scr in computer.screens:
+            if scr.screen_type in (
+                C.SCREEN_PASSWORDSCREEN,
+                C.SCREEN_HIGHSECURITYSCREEN,
+            ):
+                password = scr.data1 or ""
+                break
+    ticks_remaining = C.TICKSREQUIRED_DICTIONARYHACKER * 10000 * cpu_mod
+    new_td = {"password": password, "found": False}
+    return ticks_remaining, new_td
+
+
+def _start_file_tool(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    file_name = td.get("filename")
+    if file_name is None:
+        raise ValueError(f"{tool_name} requires target_data.filename")
+    computer = _resolve_computer(state, target_ip)
+    if computer is None:
+        raise ValueError(f"No computer found at IP {target_ip}")
+    data_file = next((f for f in computer.files if f.filename == file_name), None)
+    if data_file is None:
+        raise ValueError(f"File '{file_name}' not found on {target_ip}")
+
+    base_ticks = (
+        C.TICKSREQUIRED_COPY if tool_name == "File_Copier" else C.TICKSREQUIRED_DELETE
+    )
+    ticks_remaining = base_ticks * data_file.size * cpu_mod
+    new_td = {"filename": file_name, "target_ip": target_ip}
+    return ticks_remaining, new_td
+
+
+def _start_log_deleter(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    ticks_remaining = C.TICKSREQUIRED_LOGDELETER * cpu_mod
+    return ticks_remaining, {"log_index": td.get("log_index")}
+
+
+def _start_trace_tracker(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    return -1.0, td
+
+
+def _start_log_undeleter(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    ticks_remaining = (C.TICKSREQUIRED_LOGUNDELETER * cpu_mod) / max(1, tool_version)
+    return ticks_remaining, {"log_index": td.get("log_index")}
+
+
+def _start_generic_tool(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    base_ticks_map = {
+        "Decrypter": C.TICKSREQUIRED_DECRYPT,
+        "Firewall_Disable": C.TICKSREQUIRED_DISABLEFIREWALL,
+        "Firewall_Bypass": C.TICKSREQUIRED_ANALYSEFIREWALL,
+        "Proxy_Disable": C.TICKSREQUIRED_DISABLEPROXY,
+        "Proxy_Bypass": C.TICKSREQUIRED_ANALYSEPROXY,
+        "Monitor_Bypass": 50,
+        "Log_Modifier": C.TICKSREQUIRED_LOGMODIFIER,
+        "IP_Probe": 30,
+        "IP_Lookup": 10,
+        "Voice_Analyser": 120,
+        "Decypher": 80,
+    }
+    base_ticks = base_ticks_map.get(tool_name, 0)
+
+    if tool_name == "IP_Lookup":
+        ticks_remaining = base_ticks * cpu_mod
+    else:
+        ticks_remaining = (base_ticks * cpu_mod) / max(1, tool_version)
+
+    if tool_name == "Log_Modifier":
+        new_td = {
+            "log_index": td.get("log_index"),
+            "new_from_ip": td.get("new_from_ip"),
+            "new_subject": td.get("new_subject"),
+        }
+        return ticks_remaining, new_td
+
+    return ticks_remaining, td
+
+
+def _start_lan_tool(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    base_ticks = {
+        "LAN_Scan": C.TICKSREQUIRED_LANSCAN,
+        "LAN_Probe": C.TICKSREQUIRED_SCANLANSYSTEM,
+        "LAN_Spoof": C.TICKSREQUIRED_SPOOFLANSYSTEM,
+        "LAN_Force": C.TICKSREQUIRED_FORCELANLOCK,
+    }.get(tool_name, 0)
+    ticks_remaining = base_ticks * cpu_mod / max(1, tool_version)
+    return ticks_remaining, td
+
+
+def _start_defrag(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    ticks_remaining = C.TICKSREQUIRED_DEFRAG * 24 * cpu_mod
+    return ticks_remaining, td
+
+
+def _start_hud_tool(
+    state: GameState, tool_name: str, tool_version: int, target_ip: str, td: dict, cpu_mod: float
+) -> tuple[float, dict]:
+    return -1.0, td
+
+
+# ======================================================================
 # Start a task
 # ======================================================================
 def start_task(
@@ -77,7 +235,6 @@ def start_task(
 ) -> dict:
     """Create a new RunningTask and return its initial state dict."""
     td = target_data or {}
-    ticks_remaining = 0.0
 
     cpu_speed = _get_cpu_speed(state)
     cpu_modifier = float(BASE_CPU_SPEED) / cpu_speed
@@ -94,157 +251,42 @@ def start_task(
         if not _player_has_software(state, "HUD_LANView"):
             raise ValueError("LAN tools require HUD: LAN View software")
 
-    if tool_name == "Password_Breaker":
-        computer = _resolve_computer(state, target_ip)
-        if computer is None:
-            raise ValueError(f"No computer found at IP {target_ip}")
-        password = td.get("password", "")
-        if not password:
-            username = td.get("target_id", "admin")
-            if computer.accounts and username in computer.accounts:
-                password = computer.accounts[username]
-            else:
-                # Get password from the computer's first password screen
-                for scr in computer.screens:
-                    if scr.screen_type in (
-                        C.SCREEN_PASSWORDSCREEN,
-                        C.SCREEN_HIGHSECURITYSCREEN,
-                    ):
-                        password = scr.data1 or ""
-                        break
-            if not password:
-                raise ValueError("No password to crack on this computer")
-        ticks_remaining = computer.hack_difficulty * len(password) * cpu_modifier
-        ticks_per_char = computer.hack_difficulty * cpu_modifier
-        td = {
-            "password": password,
-            "revealed": "",
-            "char_index": 0,
-            "ticks_per_char": ticks_per_char,
-            "ticks_into_char": 0.0,
-        }
+    # Tool Registry
+    registry = {
+        "Password_Breaker": _start_password_breaker,
+        "Dictionary_Hacker": _start_dictionary_hacker,
+        "File_Copier": _start_file_tool,
+        "File_Deleter": _start_file_tool,
+        "Log_Deleter": _start_log_deleter,
+        "Trace_Tracker": _start_trace_tracker,
+        "Log_UnDeleter": _start_log_undeleter,
+        "Decrypter": _start_generic_tool,
+        "Firewall_Disable": _start_generic_tool,
+        "Firewall_Bypass": _start_generic_tool,
+        "Proxy_Disable": _start_generic_tool,
+        "Proxy_Bypass": _start_generic_tool,
+        "Monitor_Bypass": _start_generic_tool,
+        "Log_Modifier": _start_generic_tool,
+        "IP_Probe": _start_generic_tool,
+        "IP_Lookup": _start_generic_tool,
+        "Voice_Analyser": _start_generic_tool,
+        "Decypher": _start_generic_tool,
+        "LAN_Scan": _start_lan_tool,
+        "LAN_Probe": _start_lan_tool,
+        "LAN_Spoof": _start_lan_tool,
+        "LAN_Force": _start_lan_tool,
+        "Defrag": _start_defrag,
+        "HUD_ConnectionAnalysis": _start_hud_tool,
+        "HUD_IRC-Client": _start_hud_tool,
+        "HUD_MapShowTrace": _start_hud_tool,
+        "HUD_LANView": _start_hud_tool,
+    }
 
-    elif tool_name == "Dictionary_Hacker":
-        computer = _resolve_computer(state, target_ip)
-        if computer is None:
-            raise ValueError(f"No computer found at IP {target_ip}")
-        password = td.get("password", "")
-        if not password:
-            for scr in computer.screens:
-                if scr.screen_type in (
-                    C.SCREEN_PASSWORDSCREEN,
-                    C.SCREEN_HIGHSECURITYSCREEN,
-                ):
-                    password = scr.data1 or ""
-                    break
-        ticks_remaining = C.TICKSREQUIRED_DICTIONARYHACKER * 10000 * cpu_modifier
-        td = {"password": password, "found": False}
-
-    elif tool_name == "File_Copier":
-        file_name = td.get("filename")
-        if file_name is None:
-            raise ValueError("File_Copier requires target_data.filename")
-        computer = _resolve_computer(state, target_ip)
-        if computer is None:
-            raise ValueError(f"No computer found at IP {target_ip}")
-        data_file = next((f for f in computer.files if f.filename == file_name), None)
-        if data_file is None:
-            raise ValueError(f"File '{file_name}' not found on {target_ip}")
-        ticks_remaining = C.TICKSREQUIRED_COPY * data_file.size * cpu_modifier
-        td = {"filename": file_name, "target_ip": target_ip}
-
-    elif tool_name == "File_Deleter":
-        file_name = td.get("filename")
-        if file_name is None:
-            raise ValueError("File_Deleter requires target_data.filename")
-        computer = _resolve_computer(state, target_ip)
-        if computer is None:
-            raise ValueError(f"No computer found at IP {target_ip}")
-        data_file = next((f for f in computer.files if f.filename == file_name), None)
-        if data_file is None:
-            raise ValueError(f"File '{file_name}' not found on {target_ip}")
-        ticks_remaining = C.TICKSREQUIRED_DELETE * data_file.size * cpu_modifier
-        td = {"filename": file_name, "target_ip": target_ip}
-
-    elif tool_name == "Log_Deleter":
-        ticks_remaining = C.TICKSREQUIRED_LOGDELETER * cpu_modifier
-        td = {"log_index": td.get("log_index")}
-
-    elif tool_name == "Trace_Tracker":
-        # Higher versions could show more info, but for now they just run
-        ticks_remaining = -1  
-        td = {}
-
-    elif tool_name == "Log_UnDeleter":
-        ticks_remaining = (C.TICKSREQUIRED_LOGUNDELETER * cpu_modifier) / max(1, tool_version)
-        td = {"log_index": td.get("log_index")}
-
-
-    elif tool_name == "Decrypter":
-        ticks_remaining = C.TICKSREQUIRED_DECRYPT * cpu_modifier / max(1, tool_version)
-
-    elif tool_name == "Firewall_Disable":
-        ticks_remaining = (
-            C.TICKSREQUIRED_DISABLEFIREWALL * cpu_modifier / max(1, tool_version)
-        )
-
-    elif tool_name == "Firewall_Bypass":
-        ticks_remaining = (
-            C.TICKSREQUIRED_ANALYSEFIREWALL * cpu_modifier / max(1, tool_version)
-        )
-
-    elif tool_name == "Proxy_Disable":
-        ticks_remaining = (
-            C.TICKSREQUIRED_DISABLEPROXY * cpu_modifier / max(1, tool_version)
-        )
-
-    elif tool_name == "Proxy_Bypass":
-        ticks_remaining = (
-            C.TICKSREQUIRED_ANALYSEPROXY * cpu_modifier / max(1, tool_version)
-        )
-
-    elif tool_name == "Monitor_Bypass":
-        ticks_remaining = 50 * cpu_modifier / max(1, tool_version)
-
-    elif tool_name == "Log_Modifier":
-        ticks_remaining = C.TICKSREQUIRED_LOGMODIFIER * cpu_modifier / max(1, tool_version)
-        td = {"log_index": td.get("log_index"), "new_from_ip": td.get("new_from_ip"), "new_subject": td.get("new_subject")}
-
-    elif tool_name == "IP_Probe":
-        ticks_remaining = 30 * cpu_modifier / max(1, tool_version)
-
-    elif tool_name == "IP_Lookup":
-        ticks_remaining = 10 * cpu_modifier
-
-    elif tool_name in LAN_TOOLS:
-        base_ticks = {
-            "LAN_Scan": C.TICKSREQUIRED_LANSCAN,
-            "LAN_Probe": C.TICKSREQUIRED_SCANLANSYSTEM,
-            "LAN_Spoof": C.TICKSREQUIRED_SPOOFLANSYSTEM,
-            "LAN_Force": C.TICKSREQUIRED_FORCELANLOCK,
-        }
-        ticks_remaining = base_ticks[tool_name] * cpu_modifier / max(1, tool_version)
-
-    elif tool_name == "Voice_Analyser":
-        ticks_remaining = 120 * cpu_modifier / max(1, tool_version)
-
-    elif tool_name == "Defrag":
-        ticks_remaining = C.TICKSREQUIRED_DEFRAG * 24 * cpu_modifier
-
-    elif tool_name == "Decypher":
-        ticks_remaining = 80 * cpu_modifier / max(1, tool_version)
-
-    elif tool_name in (
-        "HUD_ConnectionAnalysis",
-        "HUD_IRC-Client",
-        "HUD_MapShowTrace",
-        "HUD_LANView",
-    ):
-        ticks_remaining = -1
-        td = {}
-
-    else:
+    handler = registry.get(tool_name)
+    if not handler:
         raise ValueError(f"Unknown tool: {tool_name}")
+
+    ticks_remaining, td = handler(state, tool_name, tool_version, target_ip, td, cpu_modifier)
 
     task = RunningTask(
         task_id=state.next_task_id,
