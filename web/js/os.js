@@ -817,9 +817,12 @@ async function renderFinance(el, data) {
         el.innerHTML = `<div style="color:var(--red); padding:20px; text-align:center;">RENDER ERROR: ${e.message}</div>`;
     }
 }
-function renderHardware(el, data) {
-    const heatPct = Math.min(100, ((data.heat || 0) / (data.max_heat || 90)) * 100).toFixed(1);
-    const powerPct = data.psu_capacity > 0 ? ((data.power_draw / data.psu_capacity) * 100).toFixed(1) : 0;
+async function renderHardware(el, data) {
+    data = await eel.get_hardware_status()();
+
+    const gw = data.gateway || data;
+    const heatPct = Math.min(100, ((gw.heat || 0) / (gw.max_heat || 90)) * 100).toFixed(1);
+    const powerPct = gw.psu_capacity > 0 ? ((gw.power_draw / gw.psu_capacity) * 100).toFixed(1) : 0;
     const tasks = data.tasks || [], vfsMap = data.vfs_map || [];
     const ramUsed = (data.ram_used || 0), ramTotal = (data.memory_gq || 8);
     const ramPct = ((ramUsed / ramTotal) * 100).toFixed(1);
@@ -831,6 +834,7 @@ function renderHardware(el, data) {
     if (data.heat > 60) heatColor = "var(--orange)";
     if (data.heat > 80) heatColor = "var(--red)";
 
+<<<<<<< HEAD
     el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%; overflow-y:auto;"><div style="border-right:1px solid #111; padding-right:10px;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px; display:flex; justify-content:space-between;"><span>${data.name || 'GATEWAY'}</span><span style="font-size:8px; color:#555;">v2.1</span></div>${data.is_melted ? '<div style="color:var(--red); font-weight:bold; text-align:center; padding:20px; border:1px solid var(--red); background:rgba(255,0,0,0.1);">CRITICAL HARDWARE FAILURE: MELTDOWN</div>' : `
         <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${data.heat.toFixed(1)}°C / ${data.max_heat.toFixed(0)}°C</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${heatPct}%; height:100%; background:${heatColor}; transition: width 0.3s, background 0.3s;"></div></div>
         <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER LOAD: ${data.power_draw.toFixed(1)}W / ${data.psu_capacity.toFixed(0)}W</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
@@ -880,6 +884,17 @@ function renderHardware(el, data) {
                 </div>
             </div>`).join('')}
         </div></div></div>`;
+=======
+    el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%;"><div style="border-right:1px solid #111;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">${data.name || 'GATEWAY'}</div>${gw.is_melted ? '<div style="color:var(--red); font-weight:bold;">MELTDOWN</div>' : `
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${gw.heat.toFixed(1)}°C</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${heatPct}%; height:100%; background:var(--orange);"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER: ${gw.power_draw.toFixed(1)}W</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">ACTIVE RAM: ${ramUsed}/${ramTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${ramPct}%; height:100%; background:var(--cyan);"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">VFS STORAGE: ${storageUsed}/${storageTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${storagePct}%; height:100%; background:var(--p-blue);"></div></div>
+        <div style="font-size:9px; color:var(--yellow); margin-bottom:4px; margin-top:10px;">VFS FRAGMENTATION</div><div style="display:grid; grid-template-columns: repeat(8,1fr); gap:1px; background:#050505; padding:2px;">${vfsMap.map(o => `<div style="height:8px; background:${o ? 'var(--p-blue)' : '#111'};"></div>`).join('')}</div>`}</div>
+        <div><div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">PROCESSOR STACK</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:15px;">${data.cpus ? data.cpus.map(c => `<div style="border:1px solid #222; padding:4px; background:rgba(0,0,0,0.4);"><div style="color:#fff; font-size:9px;">SLOT ${c.id}</div><div style="color:var(--cyan); font-size:10px; font-weight:bold;">${c.speed}GHz</div></div>`).join('') : ''}</div>
+        <div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">ACTIVE PROCESSES</div>${(tasks.length > 0 ? tasks : [{tool: 'System Idle', progress: 0}]).map(t => `<div style="padding:4px; font-size:9px; display:flex; justify-content:space-between;"><span style="color:#fff;">${t.tool || t.tool_name || '?'}</span><span style="color:var(--orange);">${((t.progress || 0) * 100).toFixed(0)}%</span></div>`).join('')}</div></div>`;
+>>>>>>> origin/fix-ui-wiring-and-tests-10022394234309954989
 }
 
 async function setCPUOC(id, val) { try { await eel.set_cpu_overclock(id, parseInt(val))(); refreshApp('hardware'); } catch(e) {} }
@@ -1107,3 +1122,22 @@ async function execTerminalCmd() {
     if (cmd === 'ls') { const gs = await eel.get_game_state()(); out.innerHTML += `<div>${gs.vfs.join(' ')}</div>`; } else if (cmd === 'help') out.innerHTML += `<div>Commands: ls, clear, help</div>`; else if (cmd === 'clear') out.innerHTML = ''; out.scrollTop = out.scrollHeight;
 }
 window.onload = () => { initLogin(); };
+
+async function updateCPUOverclock(id, val) {
+    await eel.set_cpu_overclock(id, parseFloat(val))();
+    refreshApp('hardware');
+}
+async function updateRAMOverclock(val) {
+    await eel.set_ram_overclock(parseFloat(val))();
+    refreshApp('hardware');
+}
+async function updateStorageOverclock(val) {
+    await eel.set_storage_overclock(parseFloat(val))();
+    refreshApp('hardware');
+}
+async function defragVFS() {
+    const res = await eel.defrag_vfs()();
+    if(res.success) showNotification(`Defrag complete. Reclaimed: ${res.reclaimed}`, "info");
+    refreshApp('hardware');
+    refreshApp('memory_banks');
+}

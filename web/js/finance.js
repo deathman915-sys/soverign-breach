@@ -188,3 +188,16 @@ function switchFinanceTab(tab) {
     document.getElementById('fin-loans').classList.toggle('hidden', tab !== 'loans');
     refreshFinance();
 }
+
+async function openBankAccount(ip) {
+    const res = await eel.open_bank_account(ip)();
+    if(res.success) showNotification("Bank account opened successfully.", "info");
+    else showNotification("Failed to open bank account: " + res.error, "critical");
+    refreshApp('finance');
+}
+async function deleteTransactionLog(txHash) {
+    const res = await eel.delete_transaction_log(txHash)();
+    if(res.success) showNotification("Transaction log deleted.", "info");
+    else showNotification("Failed to delete log.", "critical");
+    refreshApp('finance');
+}

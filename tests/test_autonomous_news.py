@@ -33,6 +33,7 @@ def test_corporate_merger_updates_state(state):
     assert state.computers["1.1.1.1"].company_name == new_name
     
     # Verify news headline
+    # Verify news headline
     assert any(any(k in e["headline"].lower() for k in ["merger", "acquired", "takeover", "consolidation"]) for e in events)
 
 def test_ambient_breach_news(state):
