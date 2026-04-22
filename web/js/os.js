@@ -739,18 +739,21 @@ async function renderFinance(el, data) {
         el.innerHTML = `<div style="color:var(--red); padding:20px; text-align:center;">RENDER ERROR: ${e.message}</div>`;
     }
 }
-function renderHardware(el, data) {
-    const heatPct = Math.min(100, ((data.heat || 0) / (data.max_heat || 90)) * 100).toFixed(1);
-    const powerPct = data.psu_capacity > 0 ? ((data.power_draw / data.psu_capacity) * 100).toFixed(1) : 0;
+async function renderHardware(el, data) {
+    data = await eel.get_hardware_status()();
+
+    const gw = data.gateway || data;
+    const heatPct = Math.min(100, ((gw.heat || 0) / (gw.max_heat || 90)) * 100).toFixed(1);
+    const powerPct = gw.psu_capacity > 0 ? ((gw.power_draw / gw.psu_capacity) * 100).toFixed(1) : 0;
     const tasks = data.tasks || [], vfsMap = data.vfs_map || [];
     const ramUsed = (data.ram_used || 0), ramTotal = (data.memory_gq || 8);
     const ramPct = ((ramUsed / ramTotal) * 100).toFixed(1);
     const storageUsed = (data.storage_used || 0), storageTotal = (data.storage_gq || 24);
     const storagePct = ((storageUsed / storageTotal) * 100).toFixed(1);
 
-    el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%;"><div style="border-right:1px solid #111;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">${data.name || 'GATEWAY'}</div>${data.is_melted ? '<div style="color:var(--red); font-weight:bold;">MELTDOWN</div>' : `
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${data.heat.toFixed(1)}°C</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${heatPct}%; height:100%; background:var(--orange);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER: ${data.power_draw.toFixed(1)}W</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
+    el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%;"><div style="border-right:1px solid #111;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">${data.name || 'GATEWAY'}</div>${gw.is_melted ? '<div style="color:var(--red); font-weight:bold;">MELTDOWN</div>' : `
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${gw.heat.toFixed(1)}°C</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${heatPct}%; height:100%; background:var(--orange);"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER: ${gw.power_draw.toFixed(1)}W</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
         <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">ACTIVE RAM: ${ramUsed}/${ramTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${ramPct}%; height:100%; background:var(--cyan);"></div></div>
         <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">VFS STORAGE: ${storageUsed}/${storageTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${storagePct}%; height:100%; background:var(--p-blue);"></div></div>
         <div style="font-size:9px; color:var(--yellow); margin-bottom:4px; margin-top:10px;">VFS FRAGMENTATION</div><div style="display:grid; grid-template-columns: repeat(8,1fr); gap:1px; background:#050505; padding:2px;">${vfsMap.map(o => `<div style="height:8px; background:${o ? 'var(--p-blue)' : '#111'};"></div>`).join('')}</div>`}</div>
@@ -978,3 +981,22 @@ async function execTerminalCmd() {
     if (cmd === 'ls') { const gs = await eel.get_game_state()(); out.innerHTML += `<div>${gs.vfs.join(' ')}</div>`; } else if (cmd === 'help') out.innerHTML += `<div>Commands: ls, clear, help</div>`; else if (cmd === 'clear') out.innerHTML = ''; out.scrollTop = out.scrollHeight;
 }
 window.onload = () => { initLogin(); };
+
+async function updateCPUOverclock(id, val) {
+    await eel.set_cpu_overclock(id, parseFloat(val))();
+    refreshApp('hardware');
+}
+async function updateRAMOverclock(val) {
+    await eel.set_ram_overclock(parseFloat(val))();
+    refreshApp('hardware');
+}
+async function updateStorageOverclock(val) {
+    await eel.set_storage_overclock(parseFloat(val))();
+    refreshApp('hardware');
+}
+async function defragVFS() {
+    const res = await eel.defrag_vfs()();
+    if(res.success) showNotification(`Defrag complete. Reclaimed: ${res.reclaimed}`, "info");
+    refreshApp('hardware');
+    refreshApp('memory_banks');
+}

@@ -110,3 +110,32 @@ async function toggleRemoteTool(toolId) {
     await eel.toggle_tool(toolId)();
     if (currentRemoteIp) loadRemoteView(currentRemoteIp);
 }
+
+async function getNeuromancer() {
+    const res = await eel.get_neuromancer()();
+    return res;
+}
+async function getRobberyTimer() {
+    const res = await eel.get_robbery_timer()();
+    return res;
+}
+async function getPassiveTraces() {
+    const res = await eel.get_passive_traces()();
+    return res;
+}
+async function getLanState(targetIp) {
+    const res = await eel.get_lan_state(targetIp)();
+    return res;
+}
+async function getSuspicion() {
+    const res = await eel.get_suspicion()();
+    return res;
+}
+async function getManifests() {
+    const res = await eel.get_manifests()();
+    return res;
+}
+async function getNodes(query) {
+    const res = await eel.get_nodes(query)();
+    return res;
+}

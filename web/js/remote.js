@@ -335,3 +335,34 @@ window.addEventListener('mousemove', e => {
         c.style.top = (e.clientY + 15) + "px"; 
     } 
 });
+
+async function spoofLanNode(targetIp, nodeId) {
+    const res = await eel.spoof_lan_node(targetIp, parseInt(nodeId))();
+    if(res.success) showNotification("Spoofed LAN node " + nodeId, "info");
+    refreshRemote();
+}
+async function probeLanNode(targetIp, nodeId) {
+    const res = await eel.probe_lan_node(targetIp, parseInt(nodeId))();
+    if(res.success) showNotification("Probed LAN node " + nodeId, "info");
+    refreshRemote();
+}
+async function startLanScan(targetIp) {
+    const res = await eel.start_lan_scan(targetIp)();
+    if(res.success) showNotification("LAN scan started.", "info");
+    refreshRemote();
+}
+async function modifyLogEntry(index) {
+    const newIp = prompt("Enter new source IP for log entry:");
+    if(newIp) {
+        const res = await eel.modify_log(currentRemoteIp, parseInt(index), newIp)();
+        if(res.success) showNotification("Log modified.", "info");
+        else showNotification("Failed to modify log.", "critical");
+        refreshRemote();
+    }
+}
+async function hijackShipment(manifestId) {
+    const res = await eel.hijack_shipment(manifestId)();
+    if(res.success) showNotification("Hijack initiated.", "info");
+    else showNotification("Hijack failed.", "critical");
+    refreshApp('logistics');
+}
