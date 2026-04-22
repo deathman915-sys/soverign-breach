@@ -8,6 +8,7 @@ Ported from the ajhenley fork — all SQLAlchemy replaced with GameState ops.
 from __future__ import annotations
 
 import logging
+
 from core.game_state import GameState
 
 log = logging.getLogger(__name__)

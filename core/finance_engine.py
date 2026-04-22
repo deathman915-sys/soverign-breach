@@ -7,13 +7,13 @@ Ported from the ajhenley fork — all SQLAlchemy replaced with GameState ops.
 
 from __future__ import annotations
 
-import random
 import logging
+import random
 import string
 
 from core.game_state import (
-    GameState,
     BankAccount,
+    GameState,
     LoanRecord,
     StockHolding,
 )
@@ -63,7 +63,7 @@ def _sync_player_hotness(state: GameState) -> None:
     if total_balance <= 0:
         state._hot_ratio = 0.0
         return
-    
+
     total_hot_mass = sum(a.balance * a.hot_ratio for a in state.bank_accounts if a.is_player)
     state._hot_ratio = total_hot_mass / total_balance
 
@@ -72,7 +72,7 @@ def transfer_funds(
     state: GameState, from_account_id: int, to_account_id: int, amount: int
 ) -> dict:
     """Transfer funds between bank accounts."""
-    from core.bank_forensics import generate_transaction_hash, create_ghost_log
+    from core.bank_forensics import create_ghost_log, generate_transaction_hash
     from core.game_state import TransactionRecord
 
     from_acct = next((a for a in state.bank_accounts if a.id == from_account_id), None)
@@ -88,12 +88,12 @@ def transfer_funds(
     # Laundering Logic: Calculate Hotness
     # 1. Determine if this is a theft (from non-player account)
     source_hotness = 1.0 if not from_acct.is_player else from_acct.hot_ratio
-    
+
     # 2. Apply cleaning (Offshore/Bouncing)
     cleaning_factor = 1.0
     if to_acct.is_offshore:
         cleaning_factor *= 0.5 # Offshore accounts are 50% effective at cleaning per transfer
-    
+
     # Reduce hotness based on bounce length (max 50% reduction)
     bounce_len = state.bounce.length
     if bounce_len > 0:
@@ -114,7 +114,7 @@ def transfer_funds(
     tx_hash = generate_transaction_hash(
         from_acct.account_number, to_acct.account_number, amount, state.clock.tick_count
     )
-    
+
     # Create non-deletable ghost logs at both banks
     create_ghost_log(state, from_acct.bank_ip, tx_hash, from_acct.account_number, to_acct.account_number, amount)
     create_ghost_log(state, to_acct.bank_ip, tx_hash, from_acct.account_number, to_acct.account_number, amount)
@@ -230,7 +230,7 @@ def accrue_interest(state: GameState, current_tick: int) -> list[dict]:
     for loan in state.loans:
         if loan.is_paid:
             continue
-        
+
         # Interest accrual
         interest = int(loan.amount * loan.interest_rate / 100)  # Per-interval
         if interest > 0:
@@ -249,7 +249,7 @@ def accrue_interest(state: GameState, current_tick: int) -> list[dict]:
         if loan.due_at_tick is not None and current_tick > loan.due_at_tick and not loan.is_defaulted:
             loan.is_defaulted = True
             log.warning(f"LOAN DEFAULT: Account {loan.bank_account_id} defaulted on loan {loan.id}")
-            
+
             repo_results = repossess_assets(state)
             events.append({
                 "type": "loan_default",
@@ -257,7 +257,7 @@ def accrue_interest(state: GameState, current_tick: int) -> list[dict]:
                 "msg": f"Loan {loan.id} overdue. Assets repossessed.",
                 "details": repo_results
             })
-            
+
     return events
 
 
@@ -282,7 +282,7 @@ def repossess_assets(state: GameState) -> dict:
     """The bank's automated 'debt collection' script. Deletes software from VFS."""
     if not state.vfs.files:
         return {"success": False, "msg": "No assets found to repossess."}
-    
+
     # Logic: Delete the highest-version software first (most valuable)
     # Filter for software type
     software_files = [f for f in state.vfs.files if f.software_type.value > 0]
@@ -291,7 +291,7 @@ def repossess_assets(state: GameState) -> dict:
         software_files = state.vfs.files
 
     software_files.sort(key=lambda f: f.version, reverse=True)
-    
+
     deleted = []
     # Delete up to 2 files as penalty
     for _ in range(min(2, len(software_files))):
@@ -299,7 +299,7 @@ def repossess_assets(state: GameState) -> dict:
         # Remove from main state
         state.vfs.files = [f for f in state.vfs.files if f.id != f_to_del.id]
         deleted.append(f_to_del.filename)
-    
+
     log.info(f"REPOSSESSION: Deleted {deleted}")
     return {"success": True, "deleted": deleted}
 

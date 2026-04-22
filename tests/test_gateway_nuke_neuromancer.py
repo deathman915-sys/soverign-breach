@@ -2,12 +2,13 @@
 Onlink-Clone: TDD tests for gateway nuke and neuromancer rating
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
 from core.game_state import GameState, VFSFile
 from core.world_generator import generate_world
 
@@ -74,7 +75,7 @@ class TestNeuromancerRating:
 
     def test_neuromancer_rating_has_levels(self, world):
         """Neuromancer rating should have named levels."""
-        from core.neuromancer import get_neuromancer_level, NEUROMANCER_LEVELS
+        from core.neuromancer import NEUROMANCER_LEVELS, get_neuromancer_level
 
         world.player.neuromancer_rating = 0
         level = get_neuromancer_level(world)

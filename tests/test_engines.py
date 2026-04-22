@@ -1,16 +1,16 @@
 """Quick smoke test for the ported engines."""
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from core.game_state import GameState, Computer, ComputerScreen
-from core.world_generator import generate_world
-from core.task_engine import start_task, tick_task
-from core.trace_engine import tick_traces, start_trace, check_completed_traces
-from core.security_engine import check_security_breaches
 from core import constants as C
+from core.game_state import Computer, ComputerScreen, GameState
+from core.security_engine import check_security_breaches
+from core.task_engine import start_task, tick_task
+from core.trace_engine import check_completed_traces, start_trace, tick_traces
+from core.world_generator import generate_world
 
 
 def test_world_gen():
@@ -89,7 +89,7 @@ def test_security_engine():
 
 
 def test_mission_negotiation():
-    from core.mission_engine import generate_missions, negotiate_mission, accept_mission
+    from core.mission_engine import accept_mission, generate_missions, negotiate_mission
 
     s = GameState()
     generate_world(s)

@@ -7,11 +7,11 @@ Ported from the ajhenley fork — all SQLAlchemy replaced with GameState ops.
 
 from __future__ import annotations
 
-import random
 import logging
+import random
 
-from core.game_state import GameState, Mission, Message, DataFile, NodeType
 from core import constants as C
+from core.game_state import DataFile, GameState, Message, Mission, NodeType
 from core.name_generator import generate_company_name
 
 log = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def _generate_record_mission(state: GameState, rng: random.Random, m_type: int, 
         MISSION_CHANGESOCIAL: C.IP_SOCIALSECURITYDATABASE,
         MISSION_CHANGEMEDICAL: C.IP_CENTRALMEDICALDATABASE,
     }
-    
+
     record_fields = {
         MISSION_CHANGEACADEMIC: [("University", "None", "MIT"), ("IQ", "90", "155"), ("Other", "None", "Graduated")],
         MISSION_CHANGECRIMINAL: [("Convictions", "None", "Robbery"), ("Convictions", "None", "Fraud")],
@@ -85,12 +85,14 @@ def _generate_record_mission(state: GameState, rng: random.Random, m_type: int, 
 
     db_ip = db_map[m_type]
     db = state.computers.get(db_ip)
-    if not db or not db.recordbank: return None
-    
+    if not db or not db.recordbank:
+        return None
+
     record = rng.choice(db.recordbank)
     field_options = record_fields.get(m_type, [])
-    if not field_options: return None
-    
+    if not field_options:
+        return None
+
     field_name, old_val, new_val = rng.choice(field_options)
     difficulty = max(1, int(db.hack_difficulty / 20))
     payment = int(difficulty * rng.randint(500, 1500))
@@ -115,13 +117,15 @@ def _generate_record_mission(state: GameState, rng: random.Random, m_type: int, 
 
 def _generate_file_mission(state: GameState, rng: random.Random, m_type: int, employer: str, target_computers: list) -> Mission | None:
     """Helper for file-based mission generation."""
-    if not target_computers: return None
+    if not target_computers:
+        return None
     target = rng.choice(target_computers)
     difficulty = max(1, int(target.hack_difficulty / 5))
     payment = int(difficulty * rng.randint(500, 1500))
 
     if m_type == MISSION_STEALFILE:
-        if not target.files: target.files.append(DataFile(filename="secret_research.dat", size=5))
+        if not target.files:
+            target.files.append(DataFile(filename="secret_research.dat", size=5))
         filename = rng.choice(target.files).filename
         desc = f"Steal the file '{filename}' from {target.company_name}'s servers at {target.ip}."
         comp_b = filename
@@ -140,9 +144,6 @@ def _generate_file_mission(state: GameState, rng: random.Random, m_type: int, em
         created_at_tick=state.clock.tick_count,
         due_at_tick=state.clock.tick_count + rng.randint(2000, 8000)
     )
-
-    return generated
-
 
 def get_available_missions(state: GameState) -> list[dict]:
     """Return missions the player can accept based on their rating."""

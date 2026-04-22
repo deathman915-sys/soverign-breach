@@ -5,26 +5,27 @@ End-to-end tests that verify multiple systems working together:
 missions, connections, stock market, store, NPCs, news, and events.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
+from core.connection_manager import connect, disconnect
+from core.event_scheduler import process_events, schedule_initial_events
+from core.finance_engine import buy_stock, get_stock_prices, sell_stock
 from core.game_state import GameState, VFSFile
-from core.world_generator import generate_world
 from core.mission_engine import (
-    generate_missions,
+    MISSION_STEALFILE,
     accept_mission,
     complete_mission,
-    MISSION_STEALFILE,
+    generate_missions,
 )
-from core.connection_manager import connect, disconnect
-from core.finance_engine import buy_stock, sell_stock, get_stock_prices
-from core.npc_engine import tick_npcs, get_rankings
-from core.news_engine import tick_news, get_recent_news
+from core.news_engine import get_recent_news, tick_news
+from core.npc_engine import get_rankings, tick_npcs
 from core.store_engine import buy_software
-from core.event_scheduler import process_events, schedule_initial_events
+from core.world_generator import generate_world
 
 
 @pytest.fixture

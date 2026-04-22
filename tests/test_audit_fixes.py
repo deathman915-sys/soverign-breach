@@ -4,20 +4,21 @@ Each test FAILS before the fix and PASSES after.
 """
 
 import pytest
+
+from core import constants as C
 from core.game_state import (
-    GameState,
-    Computer,
-    NodeType,
-    CompanyType,
-    DataFile,
     AccessLog,
+    CompanyType,
+    Computer,
+    Connection,
+    DataFile,
+    GameState,
+    LoanRecord,
+    NodeType,
+    RunningTask,
     SoftwareType,
     VFSFile,
-    LoanRecord,
-    Connection,
-    RunningTask,
 )
-from core import constants as C
 
 
 # ======================================================================
@@ -26,7 +27,7 @@ from core import constants as C
 # ======================================================================
 class TestLANProbeSpoofArgs:
     def _setup_lan(self):
-        from core.lan_engine import start_lan_scan, _lan_states
+        from core.lan_engine import _lan_states, start_lan_scan
 
         _lan_states.clear()
         state = GameState()
@@ -125,8 +126,9 @@ class TestNoModuleLevelWorldGen:
 class TestValidIPGeneration:
     def test_generate_ip_produces_valid_octets(self):
         """All octets in generated IPs must be 0-255."""
-        from core.name_generator import generate_ip
         import random
+
+        from core.name_generator import generate_ip
 
         rng = random.Random(42)
         for _ in range(100):
@@ -217,7 +219,7 @@ class TestCompanyTypesGenerated:
 class TestLANStateReset:
     def test_lan_states_reset_on_new_game(self):
         """LAN states should be cleared when starting a new game."""
-        from core.lan_engine import start_lan_scan, _lan_states, reset_lan_states
+        from core.lan_engine import _lan_states, reset_lan_states, start_lan_scan
 
         _lan_states.clear()
         state = GameState()
@@ -547,7 +549,7 @@ class TestVFSTypeDetection:
 class TestDateConsistency:
     def test_world_start_date_matches_game_date(self):
         """WORLD_START_DATE month should match GameClock.game_date default month."""
-        from core.constants import WORLD_START_DATE, GAME_START_DATE
+        from core.constants import GAME_START_DATE, WORLD_START_DATE
 
         assert WORLD_START_DATE[5] == GAME_START_DATE[5], (
             f"WORLD_START_DATE year ({WORLD_START_DATE[5]}) != GAME_START_DATE year ({GAME_START_DATE[5]})"
@@ -595,8 +597,8 @@ class TestLogSuspicionBridge:
 
     def test_escalate_suspicion_increases_levels(self):
         """escalate_suspicion should increase suspicion on non-deleted logs."""
-        from core.log_suspicion import escalate_suspicion
         from core.game_state import AccessLog, Computer
+        from core.log_suspicion import escalate_suspicion
 
         state = GameState()
         state.computers["1.1.1.1"] = Computer(ip="1.1.1.1", name="Target")
@@ -620,7 +622,7 @@ class TestBankRobberyBridge:
 
     def test_record_illegal_transfer_starts_timer(self):
         """record_illegal_transfer should create a robbery timer."""
-        from core.bank_robbery import record_illegal_transfer, get_active_robbery
+        from core.bank_robbery import get_active_robbery, record_illegal_transfer
 
         state = GameState()
         record_illegal_transfer(state, "1.1.1.1", "acct1", 5000)
@@ -694,7 +696,7 @@ class TestPassiveTraceBridge:
     def test_passive_trace_warning_on_hop(self):
         """When passive trace hops, should emit a world_event with warning."""
         from core.engine import GameEngine
-        from core.game_state import PassiveTrace, AccessLog, Computer
+        from core.game_state import AccessLog, Computer, PassiveTrace
 
         engine = GameEngine()
         events_received = []
@@ -704,7 +706,7 @@ class TestPassiveTraceBridge:
         # Add to BOTH logs and internal_logs
         log_entry = AccessLog(from_ip="1.1.1.1", subject="Connection")
         comp.add_log(log_entry)
-        
+
         engine.state.passive_traces.append(
             PassiveTrace(
                 trace_id=1,
@@ -804,7 +806,7 @@ class TestWarningEventsBridge:
 class TestAlterRecordImport:
     def test_alter_record_doesnt_crash(self):
         """Altering a record should not crash due to bad neuromancer import."""
-        from core.game_state import GameState, Record, Computer
+        from core.game_state import Computer, GameState, Record
         from core.remote_controller import RemoteController
         state = GameState()
         comp = Computer(ip="10.0.0.1", name="TestDB")

@@ -5,26 +5,27 @@ Tests mission generation, acceptance, completion, negotiation,
 active missions, deadline checking, and verification logic.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, DataFile, VFSFile
-from core.world_generator import generate_world
+
+from core.game_state import DataFile, GameState, VFSFile
 from core.mission_engine import (
-    generate_missions,
-    get_available_missions,
-    get_active_missions,
+    MISSION_DELETEDATA,
+    MISSION_STEALFILE,
     accept_mission,
+    check_mission_deadlines,
     complete_mission,
+    generate_missions,
+    get_active_missions,
+    get_available_missions,
     negotiate_mission,
     verify_mission_completion,
-    check_mission_deadlines,
-    MISSION_STEALFILE,
-    MISSION_DELETEDATA,
 )
+from core.world_generator import generate_world
 
 
 @pytest.fixture

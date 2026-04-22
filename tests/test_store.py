@@ -5,21 +5,21 @@ Tests software and hardware purchasing, balance deduction,
 and VFS updates.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from core.game_state import GameState
 from core.store_engine import (
-    buy_software,
-    buy_gateway,
     buy_cooling,
+    buy_gateway,
     buy_psu,
-    get_software_catalog,
-    get_hardware_catalog,
+    buy_software,
     get_cooling_catalog,
+    get_hardware_catalog,
     get_psu_catalog,
+    get_software_catalog,
 )
 
 

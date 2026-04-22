@@ -8,20 +8,21 @@ and sets up multi-user accounts and procedural records.
 from __future__ import annotations
 
 import random
+
+from core import constants as C
 from core.game_state import (
-    GameState,
-    Computer,
-    NodeType,
-    DataFile,
-    ComputerScreen,
     Company,
     CompanyType,
+    Computer,
+    ComputerScreen,
+    Country,
+    DataFile,
+    GameState,
+    NodeType,
     Person,
     Record,
-    Country
 )
-from core import constants as C
-from core.name_generator import generate_ip, generate_company_name, generate_name
+from core.name_generator import generate_company_name, generate_ip, generate_name
 
 
 def generate_world(state: GameState):
@@ -106,17 +107,17 @@ def _add_core_servers(state: GameState, rng: random.Random):
         # Standard Screens
         for st in [C.SCREEN_MENUSCREEN, C.SCREEN_LOGSCREEN, C.SCREEN_CONSOLESCREEN]:
             comp.screens.append(ComputerScreen(screen_type=st))
-        
+
         # Special Screens
         if special_screens:
             for st in special_screens:
                 comp.screens.append(ComputerScreen(screen_type=st))
-        
+
         # Special Files
         if special_files:
             for f in special_files:
                 comp.files.append(DataFile(filename=f["name"], size=f["size"], file_type=f.get("type", 1)))
-        
+
         state.computers[ip] = comp
         return comp
 
@@ -236,7 +237,7 @@ def _create_person_records(
     blood = rng.choice(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])
     allergies = rng.choice(["None", "Penicillin", "Peanuts", "Latex", "Bee Stings"])
     med_status = rng.choice(["Healthy", "Stable", "Critical", "Critical - Life Support"])
-    
+
     med_rec = Record(
         name=name,
         fields={
@@ -328,7 +329,8 @@ def _load_starting_software(state: GameState):
     """Loads default software from starting_software.json based on active mode."""
     import json
     import os
-    from core.game_state import VFSFile, SoftwareType
+
+    from core.game_state import SoftwareType, VFSFile
 
     config_path = "starting_software.json"
     if not os.path.exists(config_path):
@@ -342,16 +344,16 @@ def _load_starting_software(state: GameState):
     try:
         with open(config_path, "r") as f:
             config = json.load(f)
-        
+
         mode_name = config.get("active_mode", "standard")
         software_list = config.get("modes", {}).get(mode_name, [])
-        
+
         state.vfs.files = []
         for i, item in enumerate(software_list):
             fname = item["filename"]
             stype_str = item.get("type", "NONE")
             stype = getattr(SoftwareType, stype_str, SoftwareType.NONE)
-            
+
             state.vfs.files.append(
                 VFSFile(
                     id=f"start_{i}",
@@ -369,33 +371,33 @@ def _load_starting_software(state: GameState):
 
 def _generate_countries(state: GameState, rng: random.Random):
     """Initialize the list of countries in the world state."""
-    
+
     # Canonical list of countries (matching web/countries.geojson names)
     names = [
-        "Afghanistan", "Albania", "Algeria", "Angola", "Antarctica", "Argentina", "Armenia", "Australia", 
-        "Austria", "Azerbaijan", "Bangladesh", "Belarus", "Belgium", "Belize", "Benin", "Bermuda", 
-        "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", 
-        "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", 
-        "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", 
-        "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominican Republic", "East Timor", 
-        "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Ethiopia", 
-        "Falkland Islands", "Fiji", "Finland", "France", "French Guiana", "French Southern and Antarctic Lands", 
-        "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Greenland", "Guatemala", "Guinea", 
-        "Guinea Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", 
-        "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", 
-        "Kenya", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", 
-        "Lithuania", "Luxembourg", "Macedonia", "Madagascar", "Malawi", "Malaysia", "Mali", "Malta", "Mauritania", 
-        "Mexico", "Moldova", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nepal", 
-        "Netherlands", "New Caledonia", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", 
-        "Northern Cyprus", "Norway", "Oman", "Pakistan", "Panama", "Papua New Guinea", "Paraguay", "Peru", 
-        "Philippines", "Poland", "Portugal", "Puerto Rico", "Qatar", "Republic of Serbia", "Republic of the Congo", 
-        "Romania", "Russia", "Rwanda", "Saudi Arabia", "Senegal", "Sierra Leone", "Slovakia", "Slovenia", 
-        "Solomon Islands", "Somalia", "Somaliland", "South Africa", "South Korea", "South Sudan", "Spain", 
-        "Sri Lanka", "Sudan", "Suriname", "Swaziland", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", 
-        "Thailand", "The Bahamas", "Togo", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Uganda", 
-        "Ukraine", "United Arab Emirates", "United Kingdom", "United Republic of Tanzania", "United States of America", 
-        "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam", "West Bank", "Western Sahara", "Yemen", 
+        "Afghanistan", "Albania", "Algeria", "Angola", "Antarctica", "Argentina", "Armenia", "Australia",
+        "Austria", "Azerbaijan", "Bangladesh", "Belarus", "Belgium", "Belize", "Benin", "Bermuda",
+        "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
+        "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad",
+        "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+        "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominican Republic", "East Timor",
+        "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Ethiopia",
+        "Falkland Islands", "Fiji", "Finland", "France", "French Guiana", "French Southern and Antarctic Lands",
+        "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Greenland", "Guatemala", "Guinea",
+        "Guinea Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+        "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+        "Kenya", "Kosovo", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya",
+        "Lithuania", "Luxembourg", "Macedonia", "Madagascar", "Malawi", "Malaysia", "Mali", "Malta", "Mauritania",
+        "Mexico", "Moldova", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nepal",
+        "Netherlands", "New Caledonia", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea",
+        "Northern Cyprus", "Norway", "Oman", "Pakistan", "Panama", "Papua New Guinea", "Paraguay", "Peru",
+        "Philippines", "Poland", "Portugal", "Puerto Rico", "Qatar", "Republic of Serbia", "Republic of the Congo",
+        "Romania", "Russia", "Rwanda", "Saudi Arabia", "Senegal", "Sierra Leone", "Slovakia", "Slovenia",
+        "Solomon Islands", "Somalia", "Somaliland", "South Africa", "South Korea", "South Sudan", "Spain",
+        "Sri Lanka", "Sudan", "Suriname", "Swaziland", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan",
+        "Thailand", "The Bahamas", "Togo", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Uganda",
+        "Ukraine", "United Arab Emirates", "United Kingdom", "United Republic of Tanzania", "United States of America",
+        "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam", "West Bank", "Western Sahara", "Yemen",
         "Zambia", "Zimbabwe"
     ]
-    
+
     state.world.countries = [Country(name=n) for n in names]

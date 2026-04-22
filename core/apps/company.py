@@ -16,7 +16,7 @@ class CompanyApp(BaseApp):
         company = get_player_company(self.state)
         if not company:
             return {"owned": False}
-        
+
         return {
             "owned": True,
             "name": company.name,

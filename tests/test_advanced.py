@@ -2,24 +2,24 @@
 Tests for advanced simulation modules: Hardware, PMC, Logistics, and Remote Controller.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from core.engine import EventEmitter
 from core.game_state import (
-    GameState,
-    Computer,
-    NodeType,
-    TransportManifest,
     Company,
     CompanyType,
+    Computer,
+    GameState,
+    NodeType,
+    TransportManifest,
 )
 from core.hardware_engine import HardwareEngine
-from core.pmc_engine import PMCEngine
 from core.logistics_engine import LogisticsEngine
+from core.pmc_engine import PMCEngine
 from core.remote_controller import RemoteController
-from core.engine import EventEmitter
 
 
 class TestHardwareEngine:
@@ -129,20 +129,20 @@ class TestTransportHacking:
         assert manifest.is_security_sabotaged is True
 
     def test_intercept_sabotaged_bonus(self):
-        from core.pmc_engine import PMCEngine
         from core.engine import EventEmitter
         from core.game_state import PMCSquad
+        from core.pmc_engine import PMCEngine
 
         events = EventEmitter()
-        pmc = PMCEngine(events)
-        s = GameState()
-        
+        PMCEngine(events)
+        GameState()
+
         # Sabotaged manifest (effective sec: 50 -> 25)
         manifest = TransportManifest(id="TRK-001", security_level=50.0, is_security_sabotaged=True)
-        squad = PMCSquad(id="S-01", combat_rating=25.0) # 25 / (25 + 25) = 50% base
-        
+        PMCSquad(id="S-01", combat_rating=25.0) # 25 / (25 + 25) = 50% base
+
         # Without sabotage: 25 / (25 + 50) = 33% base
-        
+
         # This test just verifies the logic paths in PMCEngine
         assert manifest.is_security_sabotaged is True
 
@@ -153,30 +153,30 @@ class TestTransportHacking:
         s.computers["2.2.2.2"] = Computer(ip="2.2.2.2", name="Tokyo", x=100, y=100)
         # Mock hacked destination
         s.computers["3.3.3.3"] = Computer(ip="3.3.3.3", name="Paris", x=50, y=0)
-        
+
         manifest = TransportManifest(id="TRK-001", origin="London", destination="Tokyo", vehicle_ip="9.9.9.9", progress=0.5)
         s.world.manifests.append(manifest)
-        
+
         # Add a logistics company with this vehicle
         from core.game_state import Vehicle
         v = Vehicle(id="V-01", ip="9.9.9.9", status="IN_TRANSIT")
         c = Company(name="Test Logistics", company_type=CompanyType.LOGISTICS)
         c.vehicles.append(v)
         s.world.companies.append(c)
-        
+
         # Vehicle node
         v_node = Computer(ip="9.9.9.9", name="Plane", x=0, y=0)
         s.computers["9.9.9.9"] = v_node
-        
+
         le = LogisticsEngine()
-        
+
         # Before hacking: should be at midpoint London -> Tokyo
         # Reset progress to exactly 0.5 BEFORE tick so we can predict the position
         manifest.progress = 0.5 - 0.001 # TRUCK speed
         le.tick(s)
         assert round(v_node.x, 1) == 50.0
         assert round(v_node.y, 1) == 50.0
-        
+
         # Hack destination to Paris
         manifest.hacked_destination = "Paris"
         # At progress 0.5: London(0,0) -> Paris(50,0) = (25, 0)

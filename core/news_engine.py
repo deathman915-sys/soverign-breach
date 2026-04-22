@@ -6,8 +6,8 @@ Ported from the Uplink reference code and adapted for GameState.
 """
 from __future__ import annotations
 
-import random
 import logging
+import random
 
 from core.game_state import GameState, NewsItem
 from core.name_generator import generate_name
@@ -282,7 +282,7 @@ def _build_defaults(rng: random.Random) -> dict[str, str]:
             "InterNIC",
             "Stock Market System",
         ]),
-        "rating_name": "Intermediate", 
+        "rating_name": "Intermediate",
     }
 
 def _generate_ambient_article(state: GameState, current_tick: int, rng: random.Random) -> NewsItem:
@@ -333,7 +333,7 @@ def add_news(state: GameState, event_type: str, **kwargs) -> NewsItem | None:
     """Generate a news article based on a game event."""
     rng = random.Random()
     template = _TEMPLATES.get(event_type)
-    
+
     if template is None:
         log.warning("Unknown news event_type: %s -- generating ambient", event_type)
         return _generate_ambient_article(state, state.clock.tick_count, rng)
@@ -375,7 +375,7 @@ def create_npc_mission_news(state: GameState, npc_name: str, mission_desc: str) 
         "Uplink BBS reports completion of high-priority task '{desc}' by agent {name}",
         "Authorities confirm data breach: '{name}' is the primary suspect in {desc}"
     ]
-    
+
     headline = random.choice(templates).format(name=npc_name, desc=mission_desc)
     news = NewsItem(
         headline=headline,

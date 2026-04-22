@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Notification:
     text: str
@@ -39,7 +40,7 @@ def test_notification_queue():
     os.add_notification("Test 4")
     os.add_notification("Test 5")
     os.add_notification("Test 6") # Should drop Test 1
-    
+
     assert len(os.notifications) == 5
     assert os.notifications[0].text == "Test 2"
     assert os.notifications[-1].text == "Test 6"

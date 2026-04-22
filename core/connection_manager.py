@@ -8,14 +8,15 @@ Ported from the ajhenley fork — all SQLAlchemy replaced with GameState ops.
 from __future__ import annotations
 
 import logging
+
+from core import trace_engine
 from core.game_state import (
-    GameState,
+    AccessLog,
+    Computer,
     Connection,
     ConnectionNode,
-    Computer,
-    AccessLog,
+    GameState,
 )
-from core import trace_engine
 
 log = logging.getLogger(__name__)
 

@@ -14,25 +14,26 @@ TDD tests for:
 - Game state completeness
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import (
-    GameState,
-    Computer,
-    NodeType,
-    VFSFile,
-    SoftwareType,
-    Message,
-    CPUCore,
-    ComputerScreen,
-)
-from core.world_generator import generate_world
-from core.remote_controller import RemoteController
+
 from core import constants as C
+from core.game_state import (
+    Computer,
+    ComputerScreen,
+    CPUCore,
+    GameState,
+    Message,
+    NodeType,
+    SoftwareType,
+    VFSFile,
+)
+from core.remote_controller import RemoteController
+from core.world_generator import generate_world
 
 
 @pytest.fixture
@@ -282,7 +283,7 @@ class TestFinance:
         assert len(world.bank_accounts) == 1
 
     def test_get_player_accounts(self, world):
-        from core.finance_engine import open_account, get_player_accounts
+        from core.finance_engine import get_player_accounts, open_account
 
         open_account(world, "127.0.0.1")
         accounts = get_player_accounts(world)
@@ -318,7 +319,7 @@ class TestFinance:
         assert result["loan_id"] > 0
 
     def test_repay_loan(self, world):
-        from core.finance_engine import open_account, take_loan, repay_loan
+        from core.finance_engine import open_account, repay_loan, take_loan
 
         r = open_account(world, "127.0.0.1")
         acct = next(a for a in world.bank_accounts if a.id == r["account_id"])
@@ -328,7 +329,7 @@ class TestFinance:
         assert result["success"] is True
 
     def test_repay_loan_insufficient(self, world):
-        from core.finance_engine import open_account, take_loan, repay_loan
+        from core.finance_engine import open_account, repay_loan, take_loan
 
         r = open_account(world, "127.0.0.1")
         # Take a loan but then drain the account
@@ -350,7 +351,7 @@ class TestFinance:
         assert len(world.stock_holdings) == 1
 
     def test_sell_stock(self, world):
-        from core.finance_engine import buy_stock, sell_stock, get_stock_prices
+        from core.finance_engine import buy_stock, get_stock_prices, sell_stock
 
         world.player.balance = 100000
         prices = get_stock_prices(world)
@@ -407,8 +408,8 @@ class TestRankings:
 # ======================================================================
 class TestLogisticsHijack:
     def test_get_manifests(self, world):
-        from core.logistics_engine import LogisticsEngine
         from core.game_state import Company, CompanyType
+        from core.logistics_engine import LogisticsEngine
 
         # Add a logistics company
         world.world.companies.append(
@@ -421,8 +422,8 @@ class TestLogisticsHijack:
         assert len(world.world.manifests) > 0
 
     def test_hijack_shipment(self, world):
-        from core.logistics_engine import LogisticsEngine
         from core.game_state import Company, CompanyType, PMCSquad
+        from core.logistics_engine import LogisticsEngine
 
         world.world.companies.append(
             Company(name="FastExpress", company_type=CompanyType.LOGISTICS)
@@ -433,8 +434,8 @@ class TestLogisticsHijack:
         if not world.world.manifests:
             pytest.skip("No manifests generated")
         manifest = world.world.manifests[0]
-        from core.pmc_engine import PMCEngine
         from core.engine import EventEmitter
+        from core.pmc_engine import PMCEngine
 
         events = EventEmitter()
         pmc = PMCEngine(events)
@@ -467,7 +468,7 @@ class TestLANOperations:
         assert result["success"] is False
 
     def test_get_lan_state(self, world):
-        from core.lan_engine import start_lan_scan, get_lan_state
+        from core.lan_engine import get_lan_state, start_lan_scan
 
         world.computers["10.0.0.1"] = Computer(
             ip="10.0.0.1",

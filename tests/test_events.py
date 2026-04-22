@@ -5,25 +5,26 @@ Tests event scheduling, processing, subscription fees,
 and mission generation events.
 """
 
-import sys
-import os
 import json
+import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState
+
 from core.event_scheduler import (
-    schedule_event,
+    EVENT_ARREST,
+    EVENT_FINE,
+    EVENT_MISSION_GENERATE,
+    EVENT_SUBSCRIPTION,
+    EVENT_WARNING,
     process_events,
+    schedule_event,
     schedule_initial_events,
     schedule_trace_consequences,
-    EVENT_SUBSCRIPTION,
-    EVENT_MISSION_GENERATE,
-    EVENT_WARNING,
-    EVENT_FINE,
-    EVENT_ARREST,
 )
+from core.game_state import GameState
 
 
 @pytest.fixture

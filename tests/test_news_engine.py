@@ -1,9 +1,11 @@
-import pytest
 import logging
 from unittest import mock
 
+import pytest
+
 from core.game_state import GameState, NewsItem
-from core.news_engine import add_news, _TEMPLATES
+from core.news_engine import _TEMPLATES, add_news
+
 
 @pytest.fixture
 def state():

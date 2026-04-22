@@ -6,15 +6,15 @@ NOTSUSPICIOUS -> SUSPICIOUS -> SUSPICIOUSANDNOTICED -> UNDERINVESTIGATION
 This gives the player a window to delete logs before being traced.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, Computer, NodeType, AccessLog
-from core.world_generator import generate_world
 
+from core.game_state import AccessLog, Computer, GameState, NodeType
+from core.world_generator import generate_world
 
 # Suspicion levels
 SUSPICION_NONE = 0

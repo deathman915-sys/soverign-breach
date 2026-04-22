@@ -5,16 +5,18 @@ Combines high-fidelity simulation logic with a robust Eel bridge.
 Restored missing bridges for Neuromancer, Suspicion, Robbery, LAN, and Logistics.
 """
 
-import os
-import eel
 import logging
+import os
 import random
+
+import eel
+
+from core import connection_manager, persistence
+from core import constants as C
 from core.engine import GameEngine
-from core.world_generator import generate_world
-from core import connection_manager, constants as C
-from core.game_state import SoftwareType, CompanyType
+from core.game_state import CompanyType, SoftwareType
 from core.remote_controller import RemoteController
-from core import persistence
+from core.world_generator import generate_world
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -84,6 +86,7 @@ def load_player_profile(handle: str, password: str):
     save_path = os.path.join(persistence.PROFILES_DIR, f"{handle}.json")
     try:
         import json
+
         from core.apps import reset_registry
         with open(save_path, "r") as f:
             data = json.load(f)
@@ -425,17 +428,17 @@ def hijack_shipment(manifest_id: str, squad_id: str = None):
     manifest = next((m for m in engine.state.world.manifests if m.id == manifest_id), None)
     if not manifest:
         return {"success": False, "error": "Manifest not found"}
-    
+
     # Try to find the squad
     squad = next((s for s in engine.state.world.pmc_squads if s.id == squad_id), None)
     if not squad and engine.state.world.pmc_squads:
         squad = engine.state.world.pmc_squads[0]
-        
+
     if not squad:
         # Fallback to a default squad if none exists (legacy support)
         from core.game_state import PMCSquad
         squad = PMCSquad(id="DEFAULT", name="Alpha Squad", combat_rating=50.0)
-        
+
     return {"success": engine.pmc.attempt_intercept(engine.state, manifest, squad)}
 
 @eel.expose
@@ -523,8 +526,8 @@ def get_hardware_upgrades(category: str):
     cat_map = {"cpu": 1, "modem": 2, "memory": 4}
     cat_id = cat_map.get(category.lower(), 0)
     items = [
-        {"name": h[0], "price": h[2]} 
-        for h in HARDWARE_UPGRADES 
+        {"name": h[0], "price": h[2]}
+        for h in HARDWARE_UPGRADES
         if h[1] == cat_id
     ]
     return items
@@ -572,7 +575,7 @@ def on_tick(tick_count):
     if not hasattr(eel, "update_hud"):
         return
     state = engine.state
-    
+
     # High-Fidelity Sync: Push HUD every tick for smooth clock and trace progress
     try:
         hours = (tick_count // 3600) % 24

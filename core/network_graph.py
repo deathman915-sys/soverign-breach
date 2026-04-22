@@ -9,7 +9,7 @@ from __future__ import annotations
 import heapq
 from typing import Optional
 
-from core.game_state import GameState, NetNode, BounceChain
+from core.game_state import BounceChain, GameState, NetNode
 
 
 class NetworkGraph:

@@ -3,13 +3,14 @@ TDD tests for record screen UI rendering and HTML generation.
 Phase 2 of porting Uplink record systems.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, Computer, NodeType, Record
+
+from core.game_state import Computer, GameState, NodeType, Record
 from core.remote_controller import RemoteController, ScreenHTMLBuilder
 
 
@@ -153,7 +154,7 @@ class TestRecordAlteration:
 
     def test_alter_record_end_to_end_flow(self, rc):
         """Full flow: alter record → verify mission completion."""
-        from core.mission_engine import verify_mission_completion, Mission, MISSION_CHANGEACADEMIC
+        from core.mission_engine import MISSION_CHANGEACADEMIC, Mission, verify_mission_completion
 
         # Create a mission requiring "University" to contain "MIT"
         mission = Mission(

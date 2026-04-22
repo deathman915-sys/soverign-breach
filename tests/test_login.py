@@ -4,8 +4,8 @@ Onlink-Clone: Login/Startup Screen Tests
 Tests login functionality without importing web_main (which starts eel).
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -64,27 +64,27 @@ def test_player_password_tracking():
 
 def test_profile_persistence(tmp_path):
     """Test saving and loading a profile to/from disk."""
-    from core.persistence import save_profile, load_profile
-    from core.game_state import GameState, CPUCore
-    
+    from core.game_state import CPUCore, GameState
+    from core.persistence import load_profile, save_profile
+
     s = GameState()
     s.player.name = "PersistentAgent"
     s.player.handle = "PERSIST"
     s.player.balance = 99999
-    
+
     # Modify hardware
     s.gateway.cpus = [CPUCore(id=1, model="SuperCPU", base_speed=100, speed=100, health=80.0)]
-    
+
     # Save to a temporary file
     save_file = os.path.join(tmp_path, "PERSIST.json")
     save_profile(s, save_file)
-    
+
     assert os.path.exists(save_file)
-    
+
     # Load into a new state
     new_s = GameState()
     load_profile(new_s, save_file)
-    
+
     assert new_s.player.name == "PersistentAgent"
     assert new_s.player.balance == 99999
     assert len(new_s.gateway.cpus) == 1

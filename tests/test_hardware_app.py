@@ -1,16 +1,17 @@
 
-from core.game_state import GameState, CPUCore
 from core.apps.hardware import HardwareApp
+from core.game_state import CPUCore, GameState
+
 
 def test_hardware_app_returns_all_high_fidelity_fields():
     state = GameState()
     state.gateway.cpus = [CPUCore(id=1, health=95.0, overclock=1.2)]
     state.gateway.psu_capacity = 750.0
     state.gateway.storage_overclock = 1.5
-    
+
     app = HardwareApp(state)
     data = app.init()
-    
+
     # Missing fields in current implementation based on audit
     assert "storage_overclock" in data
     assert "psu_capacity" in data

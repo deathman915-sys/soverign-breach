@@ -1,7 +1,8 @@
 
+from core.apps.hardware import HardwareApp
 from core.game_state import GameState, VFSFile
 from core.hardware_engine import HardwareEngine
-from core.apps.hardware import HardwareApp
+
 
 def test_hardware_app_returns_vfs_block_mapping():
     state = GameState()
@@ -9,15 +10,15 @@ def test_hardware_app_returns_vfs_block_mapping():
     # Add a file
     f = VFSFile(filename="secret.dat", size_gq=4)
     state.vfs.files.append(f)
-    
+
     # Rebuild map
     HardwareEngine.rebuild_vfs_map(state)
-    
+
     assert len(f.blocks) == 4
-    
+
     app = HardwareApp(state)
     data = app.init()
-    
+
     assert "vfs_map" in data
     # vfs_map should be a list of blocks, each indicating which file owns it
     assert len(data["vfs_map"]) == 64

@@ -7,8 +7,8 @@ Ported from the ajhenley fork — simplified for initial release.
 
 from __future__ import annotations
 
-import random
 import logging
+import random
 from dataclasses import dataclass, field
 
 from core.game_state import GameState

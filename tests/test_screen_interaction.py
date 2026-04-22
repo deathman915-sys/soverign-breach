@@ -6,15 +6,16 @@ You navigate between screens on that server (File Server, BBS, Logs, Admin, etc.
 Each screen has available actions based on your access level.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, NodeType, DataFile
-from core.world_generator import generate_world
+
 from core import constants as C
+from core.game_state import DataFile, GameState, NodeType
+from core.world_generator import generate_world
 
 
 @pytest.fixture

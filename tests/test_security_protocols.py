@@ -1,7 +1,9 @@
 import pytest
-from core.game_state import GameState, Computer, SecuritySystem
-from core.connection_manager import disconnect
+
 from core import constants as C
+from core.connection_manager import disconnect
+from core.game_state import Computer, GameState, SecuritySystem
+
 
 @pytest.fixture
 def state():
@@ -29,14 +31,14 @@ def test_disconnect_resets_bypassed_state(state):
     """Verify that disconnecting from a server resets all its bypassed security systems."""
     comp = state.computers["1.1.1.1"]
     sec = comp.security_systems[0]
-    
+
     # Manually bypass
     sec.is_bypassed = True
     assert sec.is_bypassed is True
-    
+
     # Disconnect
     disconnect(state)
-    
+
     # Verify reset
     assert sec.is_bypassed is False
     assert sec.is_active is True # Should still be 'active' but no longer bypassed

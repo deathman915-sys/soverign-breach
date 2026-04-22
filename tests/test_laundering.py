@@ -1,6 +1,8 @@
 import pytest
-from core.game_state import GameState, BankAccount
+
 from core import finance_engine
+from core.game_state import BankAccount, GameState
+
 
 @pytest.fixture
 def state():
@@ -22,7 +24,7 @@ def state():
 def test_theft_is_hot(state):
     """Verify that funds from a non-player account are 100% hot."""
     finance_engine.transfer_funds(state, 1, 3, 5000)
-    
+
     player_acc = next(a for a in state.bank_accounts if a.id == 3)
     assert player_acc.hot_ratio == 1.0
     assert state._hot_ratio == 1.0
@@ -31,10 +33,10 @@ def test_offshore_laundering(state):
     """Verify that offshore transfers reduce hotness by 50%."""
     # Step 1: Steal money to standard account (100% hot)
     finance_engine.transfer_funds(state, 1, 3, 5000)
-    
+
     # Step 2: Transfer to offshore account
     finance_engine.transfer_funds(state, 3, 2, 5000)
-    
+
     offshore_acc = next(a for a in state.bank_accounts if a.id == 2)
     # 1.0 hotness * 0.5 offshore factor = 0.5
     assert offshore_acc.hot_ratio == 0.5
@@ -44,10 +46,10 @@ def test_bounce_laundering(state):
     """Verify that bouncing through nodes reduces hotness."""
     # Set bounce chain length to 4
     state.bounce.hops = ["hop1", "hop2", "hop3", "hop4"]
-    
+
     # Steal money
     finance_engine.transfer_funds(state, 1, 3, 5000)
-    
+
     player_acc = next(a for a in state.bank_accounts if a.id == 3)
     # source(1.0) * (1.0 - (4 * 0.05)) = 1.0 * 0.8 = 0.8
     assert player_acc.hot_ratio == 0.8
@@ -55,7 +57,7 @@ def test_bounce_laundering(state):
 def test_ghost_logs_created(state):
     """Verify that ghost logs are created in bank internal_logs."""
     finance_engine.transfer_funds(state, 1, 3, 1000)
-    
+
     victim_bank = state.computers.get("victim.bank")
     # Should have 1 public log and 1 internal log (ghost log)
     assert len(victim_bank.internal_logs) == 1
@@ -68,10 +70,10 @@ def test_blending_hot_and_clean_funds(state):
     player_acc.balance = 1000
     player_acc.hot_ratio = 0.0
     state.player.balance = 1000
-    
+
     # 2. Steal 1000 hot credits (no bounces)
     state.bounce.hops = []
     finance_engine.transfer_funds(state, 1, 3, 1000)
-    
+
     # Result: (1000 * 0.0 + 1000 * 1.0) / 2000 = 0.5
     assert player_acc.hot_ratio == 0.5

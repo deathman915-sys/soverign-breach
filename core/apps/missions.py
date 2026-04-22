@@ -1,7 +1,7 @@
 """Missions App - Mission BBS."""
 
 from core.apps import BaseApp
-from core.mission_engine import get_available_missions, get_active_missions
+from core.mission_engine import get_active_missions, get_available_missions
 
 
 class MissionsApp(BaseApp):

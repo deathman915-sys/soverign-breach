@@ -6,9 +6,11 @@ Scans internal logs for crimes and initiates passive traceback sequences.
 """
 
 from __future__ import annotations
+
 import logging
 import random
-from core.game_state import GameState, AccessLog, PassiveTrace, Computer, NodeType
+
+from core.game_state import AccessLog, Computer, GameState, NodeType, PassiveTrace
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ def _is_already_traced(state: GameState, log_entry: AccessLog) -> bool:
 def _start_investigation(state: GameState, start_node_ip: str, log_entry: AccessLog):
     """Starts a forensic trail hop-by-hop."""
     log.info(f"FORENSICS: Investigation started on {start_node_ip} targeting {log_entry.from_ip}")
-    
+
     trace = PassiveTrace(
         trace_id=state.next_trace_id,
         current_node_ip=start_node_ip,
@@ -63,7 +65,7 @@ def get_rankings(state: GameState) -> list[dict]:
     for p in state.world.people:
         if p.is_agent:
             rankings.append({"name": p.name, "rating": p.uplink_rating, "is_player": False})
-    
+
     # Sort by rating descending
     rankings.sort(key=lambda x: x["rating"], reverse=True)
     return rankings

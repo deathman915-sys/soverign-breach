@@ -6,11 +6,11 @@ Handles saving and loading the complete GameState to/from JSON.
 
 from __future__ import annotations
 
-import os
 import json
 import logging
-from dataclasses import asdict, is_dataclass, fields
-from typing import Any, TypeVar, TYPE_CHECKING, get_args, get_type_hints
+import os
+from dataclasses import asdict, fields, is_dataclass
+from typing import TYPE_CHECKING, Any, TypeVar, get_args, get_type_hints
 
 if TYPE_CHECKING:
     from core.game_state import GameState
@@ -29,10 +29,10 @@ def save_profile(state: GameState, file_path: str | None = None) -> bool:
     if not state.player.handle or not state.player.handle.strip():
         log.error("Cannot save profile: handle is empty")
         return False
-    
+
     if not os.path.exists(PROFILES_DIR):
         os.makedirs(PROFILES_DIR)
-        
+
     if file_path is None:
         file_path = os.path.join(PROFILES_DIR, f"{state.player.handle}.json")
 
@@ -85,7 +85,7 @@ def list_profiles() -> list[str]:
             handle = f[:-5] # remove .json
             if handle: # Skip empty filenames like ".json"
                 profiles.append(handle)
-    
+
     log.info(f"Listed {len(profiles)} profiles: {profiles}")
     return sorted(profiles)
 
@@ -132,7 +132,7 @@ def _update_dataclass_from_dict(obj: Any, data: dict):
             # Try to get the item type from the field definition (e.g., list[Computer])
             args = get_args(field_type)
             item_type = args[0] if args else None
-            
+
             new_list = []
             for item_data in value:
                 if isinstance(item_data, dict):

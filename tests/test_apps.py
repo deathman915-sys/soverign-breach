@@ -1,5 +1,6 @@
-from core.game_state import GameState, VFSFile
 from core.apps import get_registry
+from core.game_state import GameState, VFSFile
+
 
 def test_app_registry_exe_gating():
     """Apps should require .exe files in VFS to be available."""

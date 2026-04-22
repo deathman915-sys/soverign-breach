@@ -13,8 +13,8 @@ class HardwareApp(BaseApp):
 
     def init(self):
         gw = self.state.gateway
-        from core.neuromancer import get_neuromancer_level
         from core.hardware_engine import HardwareEngine
+        from core.neuromancer import get_neuromancer_level
 
         # Ensure VFS map is up to date
         HardwareEngine.rebuild_vfs_map(self.state)

@@ -1,17 +1,18 @@
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
+from core import finance_engine
 from core.game_state import (
-    GameState,
     BankAccount,
-    LoanRecord,
     Company,
     Computer,
+    GameState,
+    LoanRecord,
 )
-from core import finance_engine
 
 
 @pytest.fixture

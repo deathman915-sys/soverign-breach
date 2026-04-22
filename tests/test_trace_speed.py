@@ -9,13 +9,14 @@ In Uplink, trace speed is modified by:
 - No account at all: 0.1x (very slow trace)
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, Computer, NodeType, BankAccount
+
+from core.game_state import BankAccount, Computer, GameState, NodeType
 from core.world_generator import generate_world
 
 

@@ -5,12 +5,13 @@ Tests world generation, public server flags, mission generation on boot,
 and initial player visibility.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
 from core.game_state import GameState, NodeType
 from core.world_generator import generate_world
 
@@ -209,8 +210,9 @@ class TestProceduralContent:
 
 def test_ip_constants_are_valid():
     """All hardcoded IP constants must have valid octets (0-255)."""
-    from core import constants as C
     import ipaddress
+
+    from core import constants as C
     for name, value in vars(C).items():
         if name.startswith("IP_") and isinstance(value, str):
             ipaddress.IPv4Address(value)

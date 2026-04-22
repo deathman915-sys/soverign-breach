@@ -3,20 +3,21 @@ TDD tests for record mission generation and completion verification.
 Phase 1 of porting Uplink record systems.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, Mission, Record, Computer, NodeType
+
+from core.game_state import Computer, GameState, Mission, NodeType, Record
 from core.mission_engine import (
-    generate_missions,
-    verify_mission_completion,
     MISSION_CHANGEACADEMIC,
     MISSION_CHANGECRIMINAL,
-    MISSION_CHANGESOCIAL,
     MISSION_CHANGEMEDICAL,
+    MISSION_CHANGESOCIAL,
+    generate_missions,
+    verify_mission_completion,
 )
 
 

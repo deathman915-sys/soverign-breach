@@ -68,7 +68,7 @@ class AppRegistry:
         for cls in self.apps.values():
             if category and cls.category != category:
                 continue
-            
+
             # Check availability (VFS contents)
             # We instantiate temporarily to check
             app_instance = cls(state)
@@ -108,20 +108,20 @@ def reset_registry() -> None:
 
 def _register_builtin_apps(reg: AppRegistry, state: GameState) -> None:
     """Register all built-in apps."""
-    from core.apps.terminal import TerminalApp
-    from core.apps.missions import MissionsApp
+    from core.apps.company import CompanyApp
     from core.apps.finance import FinanceApp
-    from core.apps.messages import MessagesApp
     from core.apps.hardware import HardwareApp
-    from core.apps.store import StoreApp
+    from core.apps.logistics import LogisticsApp
+    from core.apps.map import MapApp
+    from core.apps.memory_banks import MemoryBanksApp
+    from core.apps.messages import MessagesApp
+    from core.apps.missions import MissionsApp
     from core.apps.news import NewsApp
     from core.apps.rankings import RankingsApp
     from core.apps.remote import RemoteApp
-    from core.apps.map import MapApp
+    from core.apps.store import StoreApp
     from core.apps.tasks import TasksApp
-    from core.apps.logistics import LogisticsApp
-    from core.apps.company import CompanyApp
-    from core.apps.memory_banks import MemoryBanksApp
+    from core.apps.terminal import TerminalApp
     from core.apps.tutorial import TutorialApp
 
     for cls in [

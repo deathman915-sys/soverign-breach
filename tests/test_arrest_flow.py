@@ -3,14 +3,15 @@ TDD tests for Full Arrest Flow (Phase 4).
 Tests arrest consequences, disavowed flow, news generation, and jail time.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
+from core.event_scheduler import process_jail_time, trigger_arrest
 from core.game_state import GameState, PersonStatus, VFSFile
-from core.event_scheduler import trigger_arrest, process_jail_time
 
 
 @pytest.fixture

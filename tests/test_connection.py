@@ -5,14 +5,15 @@ Tests connection, disconnection, password authentication,
 public access servers, bounce chains, and log creation.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, Computer, NodeType, ComputerScreen
-from core.connection_manager import connect, disconnect, attempt_password
+
+from core.connection_manager import attempt_password, connect, disconnect
+from core.game_state import Computer, ComputerScreen, GameState, NodeType
 
 
 @pytest.fixture

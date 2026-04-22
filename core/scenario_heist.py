@@ -4,11 +4,12 @@ Onlink-Clone: Heist Scenario Initializer
 Hardcodes exactly 4 nodes: Localhost, InterNIC, Proxy, and Target.
 Sets up the initial files and passwords for the MVP loop.
 """
-from core.game_state import GameState, Computer, NodeType, DataFile
+from core.game_state import Computer, DataFile, GameState, NodeType
+
 
 def init_heist_scenario(state: GameState):
     state.computers = {}
-    
+
     # 1. Localhost (Player Gateway) - Christchurch, NZ
     localhost = Computer(
         ip="127.0.0.1",
@@ -21,7 +22,7 @@ def init_heist_scenario(state: GameState):
     state.player.localhost_ip = localhost.ip
     state.gateway.storage_capacity = 10
     state.vfs.total_memory_gq = 10 # Set memory on the gateway state instead
-    
+
     # 2. InterNIC - New York, US
     internic = Computer(
         ip="100.100.100.1",
@@ -31,7 +32,7 @@ def init_heist_scenario(state: GameState):
         x=-74.0060, y=40.7128
     )
     state.computers[internic.ip] = internic
-    
+
     # 3. Public Proxy - London, UK
     proxy = Computer(
         ip="200.200.200.2",
@@ -41,7 +42,7 @@ def init_heist_scenario(state: GameState):
         x=-0.1278, y=51.5074
     )
     state.computers[proxy.ip] = proxy
-    
+
     # 4. Target Server - Tokyo, JP
     target = Computer(
         ip="4.4.4.4",
@@ -54,6 +55,6 @@ def init_heist_scenario(state: GameState):
     secret_file = DataFile(filename="secret.dat", size=2, file_type=1)
     target.files = [secret_file]
     state.computers[target.ip] = target
-    
+
     # Init known IPs
     state.player.known_ips = [localhost.ip, internic.ip, proxy.ip, target.ip]

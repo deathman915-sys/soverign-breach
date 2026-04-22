@@ -10,8 +10,8 @@ import json
 import logging
 import random
 
-from core.game_state import GameState, ScheduledEvent, Message, PersonStatus
 from core import constants as C
+from core.game_state import GameState, Message, PersonStatus, ScheduledEvent
 
 log = logging.getLogger(__name__)
 
@@ -274,7 +274,7 @@ def _handle_event(state: GameState, event_type: str, data: dict,
     elif event_type == EVENT_ARREST:
         comp_name = data.get("computer_name", "a system")
         trigger_arrest(state, reason=f"Hacking {comp_name}")
-        
+
         state.messages.append(Message(
             id=state.next_message_id,
             from_name="Global Criminal Database",

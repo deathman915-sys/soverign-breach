@@ -8,12 +8,13 @@ Tests for:
 - Connection flow after bounce chain
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
 from core.game_state import GameState
 from core.world_generator import generate_world
 

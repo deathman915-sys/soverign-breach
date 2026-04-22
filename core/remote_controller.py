@@ -7,11 +7,14 @@ Generates HTML from the backend so the frontend is a thin renderer.
 """
 
 from __future__ import annotations
+
 import json
 import logging
 from html import escape
+
+from core import constants as C
+from core import task_engine, trace_engine
 from core.game_state import GameState, NodeType, SoftwareType
-from core import task_engine, trace_engine, constants as C
 
 log = logging.getLogger(__name__)
 
@@ -312,14 +315,14 @@ class ScreenHTMLBuilder:
     def build_finance_html(state: GameState) -> str:
         """Generates the main financial summary screen."""
         player_accs = [a for a in state.bank_accounts if a.is_player]
-        
+
         if not player_accs:
             return (
                 '<div style="padding:40px 20px; display:flex; flex-direction:column; align-items:center;">'
                 '<div style="width:100%; max-width:800px; color:var(--text-dim); text-align:center;">'
                 'No accounts linked to authorized agent profile</div></div>'
             )
-            
+
         items = "".join(
             f'<div style="border:1px solid var(--p-blue); padding:15px; margin-bottom:10px; '
             f'display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,30,0.4);">'
@@ -335,7 +338,7 @@ class ScreenHTMLBuilder:
             f'</div>'
             for a in player_accs
         )
-        
+
         return (
             f'<div style="padding:20px; display:flex; flex-direction:column; align-items:center; overflow-y:auto; height:100%;">'
             f'<div style="width:100%; max-width:800px;">'
@@ -545,7 +548,7 @@ class RemoteController:
         manifest = next((m for m in self.state.world.manifests if m.vehicle_ip == comp.ip), None)
         if not manifest:
             return {"error": "Manifest not found for this vehicle"}
-        
+
         html = ScreenHTMLBuilder.build_logistics_control_html({"manifest": manifest})
         return {
             "type": "logistics_control",
@@ -565,7 +568,7 @@ class RemoteController:
         manifest = next((m for m in self.state.world.manifests if m.id == manifest_id), None)
         if not manifest:
             return {"success": False, "error": "Manifest not found"}
-        
+
         manifest.hacked_destination = new_destination
         log.info(f"TRANSPORT REDIRECTED: {manifest_id} now heading to {new_destination}")
         return {"success": True}
@@ -574,7 +577,7 @@ class RemoteController:
         manifest = next((m for m in self.state.world.manifests if m.id == manifest_id), None)
         if not manifest:
             return {"success": False, "error": "Manifest not found"}
-        
+
         manifest.is_security_sabotaged = True
         log.info(f"TRANSPORT SECURITY SABOTAGED: {manifest_id}")
         return {"success": True}
@@ -706,7 +709,7 @@ class RemoteController:
         return {"type": "sw_sales", "title": "Software Upgrades", "items": items, "html": html}
 
     def _render_hw_sales_screen(self) -> dict:
-        from core.store_engine import get_hardware_catalog, get_cooling_catalog, get_psu_catalog, get_addon_catalog
+        from core.store_engine import get_addon_catalog, get_cooling_catalog, get_hardware_catalog, get_psu_catalog
         gateways = get_hardware_catalog()
         cooling = get_cooling_catalog()
         psu = get_psu_catalog()

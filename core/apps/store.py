@@ -2,11 +2,11 @@
 
 from core.apps import BaseApp
 from core.store_engine import (
-    get_software_catalog,
-    get_hardware_catalog,
-    get_cooling_catalog,
-    get_psu_catalog,
     get_addon_catalog,
+    get_cooling_catalog,
+    get_hardware_catalog,
+    get_psu_catalog,
+    get_software_catalog,
 )
 
 

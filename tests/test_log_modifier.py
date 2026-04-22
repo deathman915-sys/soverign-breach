@@ -3,13 +3,14 @@ TDD tests for LogModifier (framing) functionality.
 Phase 3 of porting Uplink log modification systems.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, Computer, NodeType, AccessLog
+
+from core.game_state import AccessLog, Computer, GameState, NodeType
 from core.remote_controller import RemoteController
 
 

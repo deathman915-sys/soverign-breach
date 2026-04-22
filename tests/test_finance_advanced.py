@@ -1,6 +1,8 @@
 import pytest
-from core.game_state import GameState, BankAccount, LoanRecord, VFSFile, SoftwareType
+
 from core import finance_engine
+from core.game_state import BankAccount, GameState, LoanRecord, SoftwareType, VFSFile
+
 
 @pytest.fixture
 def state():
@@ -30,11 +32,11 @@ def test_asset_repossession_on_default(state):
 
     # 3. Tick interest/defaults (current tick 100 > due tick 50)
     events = finance_engine.accrue_interest(state, 100)
-    
+
     # 4. Verify consequences
     assert any(e["type"] == "loan_default" for e in events)
     assert loan.is_defaulted is True
-    
+
     # High version (v3) should have been repossessed first
     assert len(state.vfs.files) == 0 # It deletes up to 2 files
     filenames = [f.filename for f in state.vfs.files]
@@ -45,10 +47,10 @@ def test_offshore_maintenance_fees(state):
     # 1. Create offshore account
     offshore = BankAccount(id=2, bank_ip="8.8.8.8", balance=10000, is_player=True, is_offshore=True)
     state.bank_accounts.append(offshore)
-    
+
     # 2. Process fees
     events = finance_engine.process_offshore_fees(state, 1000)
-    
+
     # 3. Verify balance reduction (0.5% of 10000 = 50)
     assert offshore.balance == 9950
     assert any(e["type"] == "bank_fee" for e in events)

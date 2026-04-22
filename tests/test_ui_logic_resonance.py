@@ -6,9 +6,11 @@ Tests the backend hooks for the newly forged UI features:
 3. Log Modification & Recovery
 """
 import pytest
-from core.game_state import GameState, Computer, CPUCore, AccessLog, Record
-from core.remote_controller import RemoteController
+
+from core.game_state import AccessLog, Computer, CPUCore, GameState, Record
 from core.hardware_engine import HardwareEngine
+from core.remote_controller import RemoteController
+
 
 @pytest.fixture
 def state():
@@ -34,12 +36,12 @@ def test_hardware_overclocking(state):
     # Test CPU Overclocking
     # Ensure gateway has CPUs (class is CPUCore)
     state.gateway.cpus = [CPUCore(id=0, base_speed=2.0)]
-    
+
     success = HardwareEngine.set_cpu_overclock(state, 0, 2.5) # 250%
     assert success is True
     assert state.gateway.cpus[0].overclock == 2.5
     assert state.gateway.cpus[0].speed == 5.0 # 2.0 * 2.5
-    
+
     # Test RAM Overclocking
     HardwareEngine.set_ram_overclock(state, 1.5) # 150%
     assert state.gateway.ram_overclock == 1.5
@@ -52,16 +54,16 @@ def test_log_manipulation_and_recovery(state):
     # Internal backup is managed by comp.add_log, but we'll simulate it
     import copy
     comp.internal_logs = [copy.deepcopy(comp.logs[0])]
-    
+
     # Modify log
     res = rc.modify_log("1.1.1.1", 0, "9.9.9.9")
     assert res["success"] is True
     assert comp.logs[0].from_ip == "9.9.9.9"
     assert comp.logs[0].suspicion_level >= 1
-    
+
     # Verify modification detected
     assert comp.log_modified(0) is True
-    
+
     # Recover log
     # Note: recover_log is a method on the Computer class
     success = comp.recover_log(0)

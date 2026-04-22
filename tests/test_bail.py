@@ -3,15 +3,16 @@ TDD tests for Bail/Buyout System (Phase 5).
 Tests bail calculation, payment, and consequences.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState, PersonStatus
-from core.event_scheduler import trigger_arrest, pay_bail
+
 from core import constants as C
+from core.event_scheduler import pay_bail, trigger_arrest
+from core.game_state import GameState, PersonStatus
 
 
 @pytest.fixture

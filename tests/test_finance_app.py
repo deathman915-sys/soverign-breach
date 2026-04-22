@@ -1,6 +1,7 @@
 
-from core.game_state import GameState, BankAccount, TransactionRecord
 from core.apps.finance import FinanceApp
+from core.game_state import BankAccount, GameState, TransactionRecord
+
 
 def test_finance_app_returns_transaction_logs():
     state = GameState()
@@ -22,10 +23,10 @@ def test_finance_app_returns_transaction_logs():
         transaction_log=[tx]
     )
     state.bank_accounts = [acct]
-    
+
     app = FinanceApp(state)
     data = app.init()
-    
+
     # Verify transaction data is included
     assert "accounts" in data
     assert len(data["accounts"]) > 0

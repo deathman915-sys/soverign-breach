@@ -8,17 +8,18 @@ Bank robbery event: When player illegally transfers money, a 2-minute timer
 starts. If logs aren't scrubbed, game over.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
+
 from core.game_state import (
-    GameState,
-    Computer,
-    NodeType,
     AccessLog,
+    Computer,
+    GameState,
+    NodeType,
 )
 from core.world_generator import generate_world
 
@@ -120,9 +121,9 @@ class TestBankRobberyEvent:
     def test_robbery_timer_cleared_by_deleting_logs(self, world):
         """Deleting the relevant logs should clear the robbery timer."""
         from core.bank_robbery import (
+            clear_robbery_logs,
             record_illegal_transfer,
             tick_robbery_timers,
-            clear_robbery_logs,
         )
 
         # Create the bank computer with a transfer log

@@ -98,10 +98,10 @@ def clear_robbery_logs(state: GameState) -> None:
             if transfer_logs and all(log_entry.is_deleted for log_entry in transfer_logs):
                 is_cleared = True
                 log.info(f"Bank robbery timer cleared: {timer['bank_ip']}")
-        
+
         if not is_cleared:
             remaining.append(timer)
-            
+
     state._robbery_timers = remaining
 
 def get_active_robbery(state: GameState) -> dict | None:

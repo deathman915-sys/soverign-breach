@@ -11,9 +11,9 @@ from __future__ import annotations
 import random
 
 from core.game_state import (
-    GameState, NewsItem,
+    GameState,
+    NewsItem,
 )
-
 
 # Tick intervals (in simulation ticks at 5Hz)
 NPC_TICK_INTERVAL = 200       # NPC actions every ~40s
@@ -89,7 +89,7 @@ class WorldSimulator:
         if random.random() < 0.02:
             country = random.choice(state.world.countries)
             old_level = country.conflict_level
-            
+
             # Weighted shift: More likely to stay stable, but can escalate
             if old_level == 0:
                 new_level = 1 if random.random() < 0.3 else 0
@@ -97,7 +97,7 @@ class WorldSimulator:
                 new_level = 2 if random.random() < 0.4 else 3
             else:
                 new_level = old_level + random.choice([-1, 1])
-            
+
             if new_level != old_level:
                 country.conflict_level = new_level
                 levels = ["Stable", "Tense", "Skirmish", "War"]
@@ -107,12 +107,12 @@ class WorldSimulator:
                     "level": new_level,
                     "msg": f"{country.name} is now {levels[new_level]}"
                 })
-                
+
                 # Generate news for significant escalations
                 if new_level >= 2:
                     from core.news_engine import add_news
                     add_news(state, "system_failure", system_name=f"{country.name} Border Control")
-        
+
         return events
 
     # ------------------------------------------------------------------
@@ -121,7 +121,7 @@ class WorldSimulator:
     def _tick_world_events(self, state: GameState) -> list[dict]:
         """Generate world-altering events independent of the player."""
         events = []
-        
+
         # 1. Corporate Merger (0.5% chance per world tick cycle)
         if random.random() < 0.005:
             if len(state.world.companies) >= 2:
@@ -130,19 +130,19 @@ class WorldSimulator:
                 # Keep names for logging
                 old_name = c1.name
                 new_name = f"{c1.name}-{c2.name} Group"
-                
+
                 # Update Company State
                 c1.name = new_name
                 # Remove second company
                 state.world.companies = [c for c in state.world.companies if c.name != c2.name]
-                
+
                 # Update all servers belonging to either company
                 affected_count = 0
                 for comp in state.computers.values():
                     if comp.company_name == old_name or comp.company_name == c2.name:
                         comp.company_name = new_name
                         affected_count += 1
-                
+
                 from core.news_engine import add_news
                 news = add_news(state, "corporate_merger", company_a=old_name, company_b=c2.name, new_name=new_name)
                 events.append({
@@ -169,7 +169,7 @@ class WorldSimulator:
     def _tick_world_events(self, state: GameState) -> list[dict]:
         """Generate world-altering events independent of the player."""
         events = []
-        
+
         # 1. Corporate Merger (0.5% chance per world tick cycle)
         if random.random() < 0.005:
             if len(state.world.companies) >= 2:
@@ -178,19 +178,19 @@ class WorldSimulator:
                 # Keep names for logging
                 old_name = c1.name
                 new_name = f"{c1.name}-{c2.name} Group"
-                
+
                 # Update Company State
                 c1.name = new_name
                 # Remove second company
                 state.world.companies = [c for c in state.world.companies if c.name != c2.name]
-                
+
                 # Update all servers belonging to either company
                 affected_count = 0
                 for comp in state.computers.values():
                     if comp.company_name == old_name or comp.company_name == c2.name:
                         comp.company_name = new_name
                         affected_count += 1
-                
+
                 from core.news_engine import add_news
                 news = add_news(state, "corporate_merger", company_a=old_name, company_b=c2.name, new_name=new_name)
                 events.append({
@@ -222,7 +222,7 @@ class WorldSimulator:
             # 1. Log Purge
             comp.logs = [
                 log_entry for log_entry in comp.logs
-                if not log_entry.is_deleted and (now - getattr(log_entry, "tick_created", 0)) < LOG_EXPIRATION_TICKS       
+                if not log_entry.is_deleted and (now - getattr(log_entry, "tick_created", 0)) < LOG_EXPIRATION_TICKS
             ]
             # 2. Security Repair
             for sec in comp.security_systems:
@@ -256,7 +256,7 @@ class WorldSimulator:
 
         # 1. Mission Competition: Check for expired unaccepted missions
         from core.news_engine import create_npc_mission_news
-        
+
         expired_ids = []
         for mission in state.missions:
             if not mission.is_accepted and mission.expiration_tick is not None:
@@ -264,10 +264,10 @@ class WorldSimulator:
                     # A rival takes it!
                     rivals = [p for p in state.world.people if p.is_agent and not p.has_criminal_record]
                     rival_name = random.choice(rivals).name if rivals else "A rival agent"
-                    
+
                     mission.claimed_by = rival_name
                     expired_ids.append(mission.id)
-                    
+
                     # Generate news
                     news = create_npc_mission_news(state, rival_name, mission.description)
                     events.append({

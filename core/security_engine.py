@@ -9,8 +9,9 @@ from __future__ import annotations
 import logging
 import random
 import string
-from core.game_state import GameState
+
 from core import trace_engine
+from core.game_state import GameState
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def recover_compromised_systems(state: GameState):
             continue
 
         ticks_elapsed = current_tick - hacked_tick
-        
+
         # 1. Re-enable security systems
         if ticks_elapsed >= SEC_RECOVERY_TIME:
             for sec in comp.security_systems:
@@ -83,7 +84,7 @@ def recover_compromised_systems(state: GameState):
                 new_pw = _generate_random_password()
                 comp.accounts["admin"] = new_pw
                 log.info(f"System Recovery: Admin password rotated on {comp.name} ({ip})")
-            
+
             # Remove from tracking once password is changed
             recovered_ips.append(ip)
 

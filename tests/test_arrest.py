@@ -1,21 +1,22 @@
 
-from core.game_state import GameState, PersonStatus, VFSFile
 from core.engine import GameEngine
+from core.game_state import GameState, PersonStatus, VFSFile
+
 
 def test_trigger_arrest_resets_player_and_gateway():
     engine = GameEngine()
     state = engine.state
-    
+
     # Setup state
     state.player.balance = 10000
     state.player.uplink_rating = 5
     state.vfs.files.append(VFSFile(filename="hacker_tool.exe", size_gq=4))
     state.gateway.heat = 50.0
-    
+
     # Trigger arrest (simulate investigator reaching localhost)
     from core.event_scheduler import trigger_arrest
     trigger_arrest(state, reason="PASSIVE TRACE REACHED GATEWAY")
-    
+
     # Assertions
     assert state.player.status == PersonStatus.ARRESTED
     assert state.player.is_arrested is True

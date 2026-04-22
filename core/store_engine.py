@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from core.game_state import GameState, VFSFile, SoftwareType
+from core.game_state import GameState, SoftwareType, VFSFile
 
 log = logging.getLogger(__name__)
 
@@ -657,14 +657,14 @@ def buy_cpu(state: GameState, cpu_index: int, model: str) -> dict:
     spec = next((s for s in HARDWARE_UPGRADES if s[0] == model and s[1] == 1), None)
     if not spec:
         return {"success": False, "error": "CPU model not found"}
-    
+
     cost, speed = spec[2], spec[4]
     if state.player.balance < cost:
         return {"success": False, "error": "Insufficient funds"}
-        
+
     if cpu_index < 0 or cpu_index >= state.gateway.cpu_slots:
         return {"success": False, "error": "Invalid CPU slot"}
-        
+
     state.player.balance -= cost
     from core.game_state import CPUCore
     # Replace or update the CPU in that slot
@@ -673,7 +673,7 @@ def buy_cpu(state: GameState, cpu_index: int, model: str) -> dict:
         state.gateway.cpus[cpu_index] = new_cpu
     else:
         state.gateway.cpus.append(new_cpu)
-        
+
     return {"success": True, "cpu": model, "cost": cost}
 
 def buy_modem(state: GameState, model: str) -> dict:
@@ -682,11 +682,11 @@ def buy_modem(state: GameState, model: str) -> dict:
     spec = next((s for s in HARDWARE_UPGRADES if s[0] == model and s[1] == 2), None)
     if not spec:
         return {"success": False, "error": "Modem model not found"}
-        
+
     cost, speed = spec[2], spec[4]
     if state.player.balance < cost:
         return {"success": False, "error": "Insufficient funds"}
-        
+
     state.player.balance -= cost
     state.gateway.modem_speed = speed
     return {"success": True, "modem": model, "cost": cost}
@@ -697,11 +697,11 @@ def buy_memory(state: GameState, model: str) -> dict:
     spec = next((s for s in HARDWARE_UPGRADES if s[0] == model and s[1] == 4), None)
     if not spec:
         return {"success": False, "error": "Memory model not found"}
-        
+
     cost, amount = spec[2], spec[4]
     if state.player.balance < cost:
         return {"success": False, "error": "Insufficient funds"}
-        
+
     state.player.balance -= cost
     state.gateway.memory_gq = amount
     return {"success": True, "memory": model, "cost": cost}

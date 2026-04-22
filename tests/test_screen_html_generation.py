@@ -6,16 +6,17 @@ not the frontend (JS). This ensures a single source of truth for
 UI logic and makes rendering testable.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
-from core.game_state import GameState
-from core.world_generator import generate_world
+
 from core import constants as C
+from core.game_state import GameState
 from core.remote_controller import RemoteController
+from core.world_generator import generate_world
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """News App - News server."""
 
 from core.apps import BaseApp
-from core.news_engine import get_recent_news, add_news
+from core.news_engine import add_news, get_recent_news
 
 
 class NewsApp(BaseApp):

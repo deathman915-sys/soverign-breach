@@ -1,11 +1,12 @@
 
-from core.game_state import GameState, Computer, Record
+from core.game_state import Computer, GameState, Record
 from core.persistence import _update_dataclass_from_dict
+
 
 def test_computer_record_bank_storage():
     state = GameState()
     target = Computer(ip="1.1.1.1", name="International Academic Database")
-    
+
     # Create an academic record
     rec = Record(name="John Doe", fields={
         "Degree": "Computer Science",
@@ -14,7 +15,7 @@ def test_computer_record_bank_storage():
     })
     target.recordbank.append(rec)
     state.computers["1.1.1.1"] = target
-    
+
     assert len(target.recordbank) == 1
     assert target.recordbank[0].name == "John Doe"
     assert target.recordbank[0].fields["Grade"] == "A"
@@ -34,27 +35,27 @@ def test_record_hydration_persistence():
             }
         }
     }
-    
+
     _update_dataclass_from_dict(state, data)
-    
+
     target = state.computers["1.1.1.1"]
     assert isinstance(target.recordbank[0], Record)
     assert target.recordbank[0].name == "Jane Smith"
     assert target.recordbank[0].fields["Status"] == "Clean"
 
 def test_world_gen_creates_all_database_records():
-    from core.world_generator import generate_world
     from core import constants as C
+    from core.world_generator import generate_world
     state = GameState()
     generate_world(state)
-    
+
     databases = [
         C.IP_ACADEMICDATABASE,
         C.IP_GLOBALCRIMINALDATABASE,
         C.IP_SOCIALSECURITYDATABASE,
         C.IP_CENTRALMEDICALDATABASE
     ]
-    
+
     for ip in databases:
         comp = state.computers.get(ip)
         assert comp is not None

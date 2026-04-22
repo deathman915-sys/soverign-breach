@@ -17,16 +17,16 @@ import json
 import logging
 import random as _random
 
-from core.game_state import (
-    GameState,
-    RunningTask,
-    Computer,
-    VFSFile,
-    SoftwareType,
-    NodeType,
-)
 from core import constants as C
 from core import finance_engine
+from core.game_state import (
+    Computer,
+    GameState,
+    NodeType,
+    RunningTask,
+    SoftwareType,
+    VFSFile,
+)
 
 log = logging.getLogger(__name__)
 
@@ -300,7 +300,7 @@ def start_task(
     )
     # Store initial ticks for progress calculation
     task.extra["initial_ticks"] = ticks_remaining
-    
+
     state.next_task_id += 1
     state.tasks.append(task)
 
@@ -432,14 +432,14 @@ def _tick_dictionary_hacker(
     password = td.get("password", "")
     if not password:
         return td, would_complete
-        
+
     revealed = td.get("revealed", "")
     if len(revealed) < len(password):
         # Just show some random noise until completed
         import string
         noise = "".join(_random.choice(string.ascii_letters) for _ in range(len(password)))
         td["revealed"] = noise
-        
+
     return td, would_complete
 
 
@@ -482,7 +482,7 @@ def _complete_file_copier(state: GameState, task: RunningTask, td: dict) -> None
     )
     if state.vfs.free_gq >= copied.size_gq:
         state.vfs.files.append(copied)
-        
+
         # Uplink Stock Logic: Research Theft
         if filename in ("research_data.dat", "corporate_secrets.dat"):
             finance_engine.trigger_stock_crash(state, computer.company_name, "research_stolen")
@@ -497,7 +497,7 @@ def _complete_file_deleter(state: GameState, task: RunningTask, td: dict) -> Non
     if computer is None:
         return
     computer.files = [f for f in computer.files if f.filename != filename]
-    
+
     # Uplink Stock Logic: Mainframe Destruction (Formatting)
     if not computer.files and computer.computer_type == NodeType.INTERNAL_SRV:
         finance_engine.trigger_stock_crash(state, computer.company_name, "mainframe_destroyed")
@@ -511,7 +511,7 @@ def _complete_log_deleter(state: GameState, task: RunningTask, td: dict) -> None
     version = task.tool_version
     log_index = td.get("log_index")
 
-    # NOTE: We ONLY modify computer.logs (public). 
+    # NOTE: We ONLY modify computer.logs (public).
     # computer.internal_logs remains as forensic backup.
 
     if version == 1:

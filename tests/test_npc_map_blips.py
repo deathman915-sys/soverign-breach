@@ -1,6 +1,8 @@
 import pytest
-from core.game_state import GameState, Computer
+
+from core.game_state import Computer, GameState
 from core.world_sim import WorldSimulator
+
 
 @pytest.fixture
 def state():
@@ -14,11 +16,11 @@ def test_simulator_emits_map_blips(state):
     """Verify that the simulator occasionally generates NPC map activity."""
     simulator = WorldSimulator()
     state.clock.tick_count = 200 # NPC tick
-    
+
     # We might need multiple ticks to catch a random event if it's rare,
     # but for testing we can mock random or just check that the type is supported.
     events = simulator.tick(state)
-    
+
     # Check if any event is a map_blip
     # (We'll implement this in the next step)
     # For now, this test is expected to fail or find nothing.

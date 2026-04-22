@@ -7,6 +7,7 @@ Ported from the ajhenley fork — simplified for initial release.
 from __future__ import annotations
 
 import logging
+
 from core.game_state import GameState, Message
 
 log = logging.getLogger(__name__)

@@ -7,28 +7,30 @@ EventEmitter for internal signaling. Ready for Web UI bridge.
 
 from __future__ import annotations
 
-import time
-import random
 import logging
+import random
 import threading
+import time
 from typing import Callable
 
-from core.game_state import GameState, TransportManifest, Company
-from core.world_generator import generate_world
-from core import trace_engine
-from core import security_engine
-from core import finance_engine
-from core import npc_engine
-from core import news_engine
-from core import event_scheduler
-from core import plot_engine
-from core import mission_engine
-from core import log_suspicion
-from core import warning_events
-from core import bank_robbery
+from core import (
+    bank_robbery,
+    event_scheduler,
+    finance_engine,
+    log_suspicion,
+    mission_engine,
+    news_engine,
+    npc_engine,
+    plot_engine,
+    security_engine,
+    trace_engine,
+    warning_events,
+)
+from core.game_state import Company, GameState, TransportManifest
+from core.hardware_engine import HardwareEngine
 from core.logistics_engine import LogisticsEngine
 from core.pmc_engine import PMCEngine
-from core.hardware_engine import HardwareEngine
+from core.world_generator import generate_world
 
 log = logging.getLogger(__name__)
 
@@ -133,8 +135,8 @@ class GameEngine:
             generate_world(self.state)
             event_scheduler.schedule_initial_events(self.state, 0)
         # Reset module-level state for new game
-        from core.warning_events import reset_warnings
         from core.lan_engine import reset_lan_states
+        from core.warning_events import reset_warnings
         reset_warnings()
         reset_lan_states()
 
@@ -196,10 +198,14 @@ class GameEngine:
         self.logistics.tick(s)
 
         # Modular Tick Sequence
-        if self._tick_hardware_and_tasks(s, tc): return
-        if self._tick_connection_and_trace(s, tc): return
-        if self._tick_legal_and_security(s, tc): return
-        if self._tick_economy_and_world(s, tc): return
+        if self._tick_hardware_and_tasks(s, tc):
+            return
+        if self._tick_connection_and_trace(s, tc):
+            return
+        if self._tick_legal_and_security(s, tc):
+            return
+        if self._tick_economy_and_world(s, tc):
+            return
 
         self.events.emit("tick_completed", tc)
 
@@ -282,14 +288,18 @@ class GameEngine:
         """Processes stock market, NPCs, news, missions, and bank robberies."""
         if tc % FINANCE_TICK_INTERVAL == 0:
             finance_engine.tick_stock_market(s)
-            for evt in finance_engine.accrue_interest(s, tc): self.events.emit("world_event", evt)
-            for evt in finance_engine.process_offshore_fees(s, tc): self.events.emit("world_event", evt)
+            for evt in finance_engine.accrue_interest(s, tc):
+                self.events.emit("world_event", evt)
+            for evt in finance_engine.process_offshore_fees(s, tc):
+                self.events.emit("world_event", evt)
 
         if tc % NPC_TICK_INTERVAL == 0:
-            for evt in npc_engine.tick_npcs(s, tc): self.events.emit("world_event", evt)
+            for evt in npc_engine.tick_npcs(s, tc):
+                self.events.emit("world_event", evt)
 
         if tc % NEWS_TICK_INTERVAL == 0:
-            for evt in news_engine.tick_news(s, tc): self.events.emit("world_event", evt)
+            for evt in news_engine.tick_news(s, tc):
+                self.events.emit("world_event", evt)
 
         if tc % EVENT_PROCESS_INTERVAL == 0:
             sched_events = event_scheduler.process_events(s, tc)
@@ -301,10 +311,12 @@ class GameEngine:
                 self.events.emit("world_event", evt)
 
         if tc % PLOT_CHECK_INTERVAL == 0:
-            for evt in plot_engine.check_plot_triggers(s): self.events.emit("world_event", evt)
+            for evt in plot_engine.check_plot_triggers(s):
+                self.events.emit("world_event", evt)
 
         if tc % 100 == 0:
-            for evt in mission_engine.check_mission_deadlines(s): self.events.emit("world_event", evt)
+            for evt in mission_engine.check_mission_deadlines(s):
+                self.events.emit("world_event", evt)
 
         if tc % 10 == 0:
             bank_robbery.clear_robbery_logs(s)
