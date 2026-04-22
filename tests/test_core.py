@@ -37,6 +37,11 @@ class TestGameState:
         assert len(s.computers) == 0
         assert len(s.tasks) == 0
 
+    def test_memory_size(self):
+        g = GameState().gateway
+        g.storage_capacity = 128
+        assert g.memory_size == 128
+
     def test_vfs_used_gq(self):
         s = GameState()
         s.vfs.files.append(VFSFile(id="test.dat", filename="test.dat", size_gq=5))
