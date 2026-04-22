@@ -95,160 +95,45 @@ def generate_world(state: GameState):
 
 
 def _add_core_servers(state: GameState, rng: random.Random):
-    """Helper for adding standard servers."""
+    """Generates the canonical core servers using a data-driven configuration."""
 
-    def add_server(
-        ip,
-        name,
-        c_type,
-        t_speed,
-        h_diff,
-        x,
-        y,
-        is_listed=True,
-        admin_pass="rose",
-        is_public=False,
-    ):
-        comp = Computer(
-            ip=ip,
-            name=name,
-            company_name=name,
-            computer_type=c_type,
-            trace_speed=t_speed,
-            hack_difficulty=h_diff,
-            x=x,
-            y=y,
-            listed=is_listed,
-        )
+    def add_server(ip, name, c_type, t_speed, h_diff, x, y, is_listed=True, admin_pass="rose", is_public=False, special_screens=None, special_files=None):
+        comp = Computer(ip=ip, name=name, company_name=name, computer_type=c_type, trace_speed=t_speed, hack_difficulty=h_diff, x=x, y=y, listed=is_listed)
         if not is_public:
             comp.accounts["admin"] = admin_pass
-            comp.screens.append(
-                ComputerScreen(screen_type=C.SCREEN_PASSWORDSCREEN, data1=admin_pass)
-            )
+            comp.screens.append(ComputerScreen(screen_type=C.SCREEN_PASSWORDSCREEN, data1=admin_pass))
 
-        comp.screens.append(ComputerScreen(screen_type=C.SCREEN_MENUSCREEN))
-        comp.screens.append(ComputerScreen(screen_type=C.SCREEN_LOGSCREEN))
-        comp.screens.append(ComputerScreen(screen_type=C.SCREEN_CONSOLESCREEN))
+        # Standard Screens
+        for st in [C.SCREEN_MENUSCREEN, C.SCREEN_LOGSCREEN, C.SCREEN_CONSOLESCREEN]:
+            comp.screens.append(ComputerScreen(screen_type=st))
+        
+        # Special Screens
+        if special_screens:
+            for st in special_screens:
+                comp.screens.append(ComputerScreen(screen_type=st))
+        
+        # Special Files
+        if special_files:
+            for f in special_files:
+                comp.files.append(DataFile(filename=f["name"], size=f["size"], file_type=f.get("type", 1)))
+        
         state.computers[ip] = comp
         return comp
 
-    # Uplink Public Access Server
-    add_server(
-        C.IP_UPLINKPUBLICACCESSSERVER,
-        "Uplink Public Access Server",
-        NodeType.PUBLIC_SERVER,
-        C.TRACESPEED_UPLINK_PUBLICACCESSSERVER,
-        1,
-        -100,
-        30,
-        True,
-        "agent",
-        is_public=True,
-    )
+    # Configuration for Core Servers
+    SERVER_CONFIGS = [
+        {"ip": C.IP_UPLINKPUBLICACCESSSERVER, "name": "Uplink Public Access Server", "c_type": NodeType.PUBLIC_SERVER, "t_speed": C.TRACESPEED_UPLINK_PUBLICACCESSSERVER, "h_diff": 1, "x": -100, "y": 30, "is_public": True},
+        {"ip": C.IP_INTERNIC, "name": "InterNIC", "c_type": NodeType.INTERNIC, "t_speed": C.TRACESPEED_INTERNIC, "h_diff": 1, "x": -74, "y": 40, "admin_pass": "password", "special_screens": [C.SCREEN_LINKSSCREEN, C.SCREEN_COMPANYINFO]},
+        {"ip": C.IP_ACADEMICDATABASE, "name": "International Academic Database", "c_type": NodeType.GOVERNMENT, "t_speed": C.TRACESPEED_INTERNATIONALACADEMICDATABASE, "h_diff": 3, "x": 20, "y": 50, "admin_pass": "scholars", "special_screens": [C.SCREEN_ACADEMICSCREEN], "special_files": [{"name": "research_data.dat", "size": 2}]},
+        {"ip": C.IP_GLOBALCRIMINALDATABASE, "name": "Global Criminal Database", "c_type": NodeType.GOVERNMENT, "t_speed": C.TRACESPEED_GLOBALCRIMINALDATABASE, "h_diff": 4, "x": 15, "y": 45, "admin_pass": "justice", "special_screens": [C.SCREEN_CRIMINALSCREEN]},
+        {"ip": C.IP_SOCIALSECURITYDATABASE, "name": "International Social Security Database", "c_type": NodeType.GOVERNMENT, "t_speed": C.TRACESPEED_INTERNATIONALSOCIALSECURITYDATABASE, "h_diff": 3, "x": -10, "y": 20, "admin_pass": "welfare", "special_screens": [C.SCREEN_SOCIALSECURITYSCREEN]},
+        {"ip": C.IP_CENTRALMEDICALDATABASE, "name": "Central Medical Database", "c_type": NodeType.GOVERNMENT, "t_speed": C.TRACESPEED_CENTRALMEDICALDATABASE, "h_diff": 3, "x": 5, "y": 25, "admin_pass": "health", "special_screens": [C.SCREEN_CENTRALMEDICALSCREEN]},
+        {"ip": C.IP_STOCKMARKETSYSTEM, "name": "Stock Market", "c_type": NodeType.GOVERNMENT, "t_speed": C.TRACESPEED_STOCKMARKET, "h_diff": 5, "x": -80, "y": 42, "admin_pass": "bullbear"},
+        {"ip": C.IP_UPLINKINTERNALSERVICES, "name": "Uplink Internal Services Machine", "c_type": NodeType.INTERNAL_SRV, "t_speed": C.TRACESPEED_UPLINK_INTERNALSERVICESMACHINE, "h_diff": 5, "x": -105, "y": 35, "admin_pass": "uplink", "special_screens": [C.SCREEN_BBSSCREEN, C.SCREEN_SWSALESSCREEN, C.SCREEN_HWSALESSCREEN, C.SCREEN_RANKINGSCREEN, C.SCREEN_NEWSSCREEN, C.SCREEN_COMPANYINFO]},
+    ]
 
-    # InterNIC
-    internic = add_server(
-        C.IP_INTERNIC,
-        "InterNIC",
-        NodeType.INTERNIC,
-        C.TRACESPEED_INTERNIC,
-        1,
-        -74,
-        40,
-        True,
-        "password",
-    )
-    internic.screens.append(ComputerScreen(screen_type=C.SCREEN_LINKSSCREEN))
-    internic.screens.append(ComputerScreen(screen_type=C.SCREEN_COMPANYINFO))
-
-    # Academic Database
-    acad = add_server(
-        C.IP_ACADEMICDATABASE,
-        "International Academic Database",
-        NodeType.GOVERNMENT,
-        C.TRACESPEED_INTERNATIONALACADEMICDATABASE,
-        3,
-        20,
-        50,
-        True,
-        "scholars",
-    )
-    acad.screens.append(ComputerScreen(screen_type=C.SCREEN_ACADEMICSCREEN))
-    acad.files.append(DataFile(filename="research_data.dat", size=2, file_type=1))
-
-    # Global Criminal Database
-    crim = add_server(
-        C.IP_GLOBALCRIMINALDATABASE,
-        "Global Criminal Database",
-        NodeType.GOVERNMENT,
-        C.TRACESPEED_GLOBALCRIMINALDATABASE,
-        4,
-        15,
-        45,
-        True,
-        "justice",
-    )
-    crim.screens.append(ComputerScreen(screen_type=C.SCREEN_CRIMINALSCREEN))
-
-    # Social Security Database
-    soc = add_server(
-        C.IP_SOCIALSECURITYDATABASE,
-        "International Social Security Database",
-        NodeType.GOVERNMENT,
-        C.TRACESPEED_INTERNATIONALSOCIALSECURITYDATABASE,
-        3,
-        -10,
-        20,
-        True,
-        "welfare",
-    )
-    soc.screens.append(ComputerScreen(screen_type=C.SCREEN_SOCIALSECURITYSCREEN))
-
-    # Central Medical Database
-    med = add_server(
-        C.IP_CENTRALMEDICALDATABASE,
-        "Central Medical Database",
-        NodeType.GOVERNMENT,
-        C.TRACESPEED_CENTRALMEDICALDATABASE,
-        3,
-        5,
-        25,
-        True,
-        "health",
-    )
-    med.screens.append(ComputerScreen(screen_type=C.SCREEN_CENTRALMEDICALSCREEN))
-
-    # Stock Market
-    add_server(
-        C.IP_STOCKMARKETSYSTEM,
-        "Stock Market",
-        NodeType.GOVERNMENT,
-        C.TRACESPEED_STOCKMARKET,
-        5,
-        -80,
-        42,
-        True,
-        "bullbear",
-    )
-
-    # Uplink Internal Services Machine
-    uint = add_server(
-        C.IP_UPLINKINTERNALSERVICES,
-        "Uplink Internal Services Machine",
-        NodeType.INTERNAL_SRV,
-        C.TRACESPEED_UPLINK_INTERNALSERVICESMACHINE,
-        5,
-        -105,
-        35,
-        True,
-        "uplink",
-    )
-    uint.screens.append(ComputerScreen(screen_type=C.SCREEN_BBSSCREEN))
-    uint.screens.append(ComputerScreen(screen_type=C.SCREEN_SWSALESSCREEN))
-    uint.screens.append(ComputerScreen(screen_type=C.SCREEN_HWSALESSCREEN))
-    uint.screens.append(ComputerScreen(screen_type=C.SCREEN_RANKINGSCREEN))
-    uint.screens.append(ComputerScreen(screen_type=C.SCREEN_NEWSSCREEN))
-    uint.screens.append(ComputerScreen(screen_type=C.SCREEN_COMPANYINFO))
+    for cfg in SERVER_CONFIGS:
+        add_server(**cfg)
 
 
 def _generate_population(state: GameState, rng: random.Random):

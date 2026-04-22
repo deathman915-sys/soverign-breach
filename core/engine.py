@@ -188,64 +188,54 @@ class GameEngine:
 
     def _tick(self, interval: float) -> None:
         """One simulation step."""
-        # Only hold lock briefly to bump tick count
         with self._lock:
             s = self.state
             s.clock.tick_count += 1
             tc = s.clock.tick_count
 
-        # All engine work happens WITHOUT the lock so stop() can interrupt
-        # 1) Logistics engine
         self.logistics.tick(s)
 
-        # 2) Physical Hardware constraints & Task Performance
+        # Modular Tick Sequence
+        if self._tick_hardware_and_tasks(s, tc): return
+        if self._tick_connection_and_trace(s, tc): return
+        if self._tick_legal_and_security(s, tc): return
+        if self._tick_economy_and_world(s, tc): return
+
+        self.events.emit("tick_completed", tc)
+
+    def _tick_hardware_and_tasks(self, s: GameState, tc: int) -> bool:
+        """Processes hardware thermals, power, and task progress."""
         progress_updates, completed_tasks = HardwareEngine.process_tick(s, 1.0)
 
-        # Emit hardware events
         self.events.emit("heat_changed", s.gateway.heat)
         self.events.emit("power_changed", s.gateway.power_draw, s.gateway.psu_capacity)
 
-        # Task events
         if progress_updates:
             self.events.emit("task_progress", progress_updates)
         for t in completed_tasks:
             self.events.emit("task_completed", {"task_id": t.task_id, "tool_name": t.tool_name, "target_ip": t.target_ip})
 
-        # Cleanup inactive tasks
         s.tasks = [t for t in s.tasks if t.is_active]
 
         if s.gateway.is_melted:
             self.stop()
             self.events.emit("game_over", "Gateway overheated — hardware destroyed!")
-            return
+            return True
+        return False
 
-        # 3) Trace engine (Active Trace)
+    def _tick_connection_and_trace(self, s: GameState, tc: int) -> bool:
+        """Processes active and passive traces."""
         if s.connection.trace_active:
             duration = getattr(s.connection, "_trace_duration", 15.0)
             s.connection.trace_progress = min(1.0, s.connection.trace_progress + (1.0 / duration))
             if s.connection.trace_progress >= 1.0:
                 self.stop()
                 self.events.emit("game_over", "TRACED")
-                return
+                return True
 
-        # --- MVP Heist: Passive Traces (Forensics) ---
         npc_engine.process_npc_investigations(s, 1.0)
         self._tick_passive_traces()
 
-        # Jail time processing
-        if s.player.is_arrested:
-            from core.event_scheduler import process_jail_time
-            jail_result = process_jail_time(s, 1.0)
-            if jail_result and jail_result["type"] == "profile_deleted":
-                self.stop()
-                self.events.emit("game_over", {"type": "profile_deleted"})
-                return
-            elif jail_result and jail_result["type"] == "disavow_countdown":
-                self.events.emit("world_event", {"type": "disavow_countdown", **jail_result})
-            elif jail_result and jail_result["type"] == "released":
-                self.events.emit("world_event", {"type": "released"})
-
-        # Pass 1.0 as delta time to external engines
         trace_engine.tick_traces(s, 1.0)
         completions = trace_engine.check_completed_traces(s)
         for comp in completions:
@@ -253,78 +243,69 @@ class GameEngine:
             target = s.computers.get(s.connection.target_ip)
             if target:
                 event_scheduler.schedule_trace_consequences(s, target.name, tc, target.hack_difficulty)
+        return False
 
-        # 5) Security engine
+    def _tick_legal_and_security(self, s: GameState, tc: int) -> bool:
+        """Processes jail time, security breaches, and suspicion."""
+        if s.player.is_arrested:
+            from core.event_scheduler import process_jail_time
+            jail_result = process_jail_time(s, 1.0)
+            if jail_result and jail_result["type"] == "profile_deleted":
+                self.stop()
+                self.events.emit("game_over", {"type": "profile_deleted"})
+                return True
+            elif jail_result and jail_result["type"] == "disavow_countdown":
+                self.events.emit("world_event", {"type": "disavow_countdown", **jail_result})
+            elif jail_result and jail_result["type"] == "released":
+                self.events.emit("world_event", {"type": "released"})
+
         if tc % SECURITY_CHECK_INTERVAL == 0:
             sec_events = security_engine.check_security_breaches(s)
             for evt in sec_events:
                 self.events.emit("world_event", evt)
 
-        # System recovery (Repair bypassed security, rotate hacked passwords)
         if tc % 100 == 0:
             security_engine.recover_compromised_systems(s)
 
-        # 6) Finance engine
-        if tc % FINANCE_TICK_INTERVAL == 0:
-            finance_engine.tick_stock_market(s)
-            
-            # Loans & Defaults
-            fin_events = finance_engine.accrue_interest(s, tc)
-            for evt in fin_events:
-                self.events.emit("world_event", evt)
-                
-            # Offshore Fees
-            fee_events = finance_engine.process_offshore_fees(s, tc)
-            for evt in fee_events:
-                self.events.emit("world_event", evt)
-
-        # 7) NPC engine
-        if tc % NPC_TICK_INTERVAL == 0:
-            npc_events = npc_engine.tick_npcs(s, tc)
-            for evt in npc_events:
-                self.events.emit("world_event", evt)
-
-        # 8) News engine
-        if tc % NEWS_TICK_INTERVAL == 0:
-            news_events = news_engine.tick_news(s, tc)
-            for evt in news_events:
-                self.events.emit("world_event", evt)
-
-        # 9) Event scheduler
-        if tc % EVENT_PROCESS_INTERVAL == 0:
-            sched_events = event_scheduler.process_events(s, tc)
-            for evt in sched_events:
-                if evt.get("type") == "game_over":
-                    self.stop()
-                    self.events.emit("game_over", evt["reason"])
-                    return
-                self.events.emit("world_event", evt)
-
-        # 10) Plot engine
-        if tc % PLOT_CHECK_INTERVAL == 0:
-            plot_events = plot_engine.check_plot_triggers(s)
-            for evt in plot_events:
-                self.events.emit("world_event", evt)
-
-        # 11) Mission deadlines
-        if tc % 100 == 0:
-            failures = mission_engine.check_mission_deadlines(s)
-            for evt in failures:
-                self.events.emit("world_event", evt)
-
-        # 12) Log suspicion escalation
         if tc % 50 == 0:
             susp_events = log_suspicion.escalate_suspicion(s, 50)
             for evt in susp_events:
                 if evt["level"] >= 3:
                     self.events.emit("world_event", {"type": "investigation", "computer": evt["computer"], "computer_ip": evt["computer_ip"], "log_subject": evt["log_subject"]})
 
-        # 13) Warning events
         if tc % 100 == 0:
             for evt in warning_events.check_warnings(s):
                 self.events.emit("world_event", evt)
+        return False
 
-        # 14) Bank robbery timers
+    def _tick_economy_and_world(self, s: GameState, tc: int) -> bool:
+        """Processes stock market, NPCs, news, missions, and bank robberies."""
+        if tc % FINANCE_TICK_INTERVAL == 0:
+            finance_engine.tick_stock_market(s)
+            for evt in finance_engine.accrue_interest(s, tc): self.events.emit("world_event", evt)
+            for evt in finance_engine.process_offshore_fees(s, tc): self.events.emit("world_event", evt)
+
+        if tc % NPC_TICK_INTERVAL == 0:
+            for evt in npc_engine.tick_npcs(s, tc): self.events.emit("world_event", evt)
+
+        if tc % NEWS_TICK_INTERVAL == 0:
+            for evt in news_engine.tick_news(s, tc): self.events.emit("world_event", evt)
+
+        if tc % EVENT_PROCESS_INTERVAL == 0:
+            sched_events = event_scheduler.process_events(s, tc)
+            for evt in sched_events:
+                if evt.get("type") == "game_over":
+                    self.stop()
+                    self.events.emit("game_over", evt["reason"])
+                    return True
+                self.events.emit("world_event", evt)
+
+        if tc % PLOT_CHECK_INTERVAL == 0:
+            for evt in plot_engine.check_plot_triggers(s): self.events.emit("world_event", evt)
+
+        if tc % 100 == 0:
+            for evt in mission_engine.check_mission_deadlines(s): self.events.emit("world_event", evt)
+
         if tc % 10 == 0:
             bank_robbery.clear_robbery_logs(s)
             robbery_events = bank_robbery.tick_robbery_timers(s, 10)
@@ -332,11 +313,9 @@ class GameEngine:
                 if evt.get("game_over"):
                     self.stop()
                     self.events.emit("game_over", evt["message"])
-                    return
+                    return True
                 self.events.emit("world_event", evt)
-
-        # Emit tick
-        self.events.emit("tick_completed", tc)
+        return False
 
     def _tick_passive_traces(self) -> None:
         """Advance NPC forensic investigations using internal forensic logs."""

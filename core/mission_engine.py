@@ -39,174 +39,107 @@ MISSION_DESCRIPTIONS = {
 
 
 def generate_missions(state: GameState, count: int = 5) -> list[Mission]:
-    """Generate count new missions and add them to state.missions.
-    Now includes all 4 record mission types with proper completion criteria.
-    """
+    """Generate count new missions and add them to state.missions."""
     rng = random.Random()
     generated = []
 
-    # Get list of valid target computers (internal servers and mainframes)
+    # Valid targets for file missions
     target_computers = [
-        comp
-        for comp in state.computers.values()
+        comp for comp in state.computers.values()
         if comp.computer_type in (NodeType.INTERNAL_SRV, NodeType.MAINFRAME)
         and comp.company_name not in ("Player", "Uplink Corporation")
     ]
 
-    if not target_computers:
-        return generated
+    for _ in range(count):
+        m_type = rng.choice([MISSION_STEALFILE, MISSION_DELETEDATA, MISSION_CHANGEACADEMIC, MISSION_CHANGECRIMINAL, MISSION_CHANGESOCIAL, MISSION_CHANGEMEDICAL])
+        employer = generate_company_name(rng)
 
-    # Database IPs for record missions
-    database_map = {
+        if m_type in (MISSION_CHANGEACADEMIC, MISSION_CHANGECRIMINAL, MISSION_CHANGESOCIAL, MISSION_CHANGEMEDICAL):
+            mission = _generate_record_mission(state, rng, m_type, employer)
+        else:
+            mission = _generate_file_mission(state, rng, m_type, employer, target_computers)
+
+        if mission:
+            state.next_mission_id += 1
+            state.missions.append(mission)
+            generated.append(mission)
+
+    return generated
+
+
+def _generate_record_mission(state: GameState, rng: random.Random, m_type: int, employer: str) -> Mission | None:
+    """Helper for record-based mission generation."""
+    db_map = {
         MISSION_CHANGEACADEMIC: C.IP_ACADEMICDATABASE,
         MISSION_CHANGECRIMINAL: C.IP_GLOBALCRIMINALDATABASE,
         MISSION_CHANGESOCIAL: C.IP_SOCIALSECURITYDATABASE,
         MISSION_CHANGEMEDICAL: C.IP_CENTRALMEDICALDATABASE,
     }
-
-    # Field options for each record type: (field_name, old_value, new_value)
+    
     record_fields = {
-        MISSION_CHANGEACADEMIC: [
-            ("University", "None", "MIT"),
-            ("University", "None", "Stanford"),
-            ("University", "None", "Oxford"),
-            ("IQ", "90", "155"),
-            ("IQ", "100", "160"),
-            ("Other", "None", "Graduated"),
-        ],
-        MISSION_CHANGECRIMINAL: [
-            ("Convictions", "None", "Robbery"),
-            ("Convictions", "None", "Fraud"),
-            ("Convictions", "None", "Hacking"),
-        ],
-        MISSION_CHANGESOCIAL: [
-            ("Personal Status", "Employed", "Deceased"),
-            ("Marital Status", "Single", "Married"),
-        ],
-        MISSION_CHANGEMEDICAL: [
-            ("Health Status", "Healthy", "Critical"),
-            ("Health Status", "Healthy", "Terminal"),
-            ("Allergies", "None", "Penicillin"),
-        ],
+        MISSION_CHANGEACADEMIC: [("University", "None", "MIT"), ("IQ", "90", "155"), ("Other", "None", "Graduated")],
+        MISSION_CHANGECRIMINAL: [("Convictions", "None", "Robbery"), ("Convictions", "None", "Fraud")],
+        MISSION_CHANGESOCIAL: [("Personal Status", "Employed", "Deceased"), ("Marital Status", "Single", "Married")],
+        MISSION_CHANGEMEDICAL: [("Health Status", "Healthy", "Critical"), ("Allergies", "None", "Penicillin")],
     }
 
-    for _ in range(count):
-        mission_type = rng.choice(
-            [
-                MISSION_STEALFILE,
-                MISSION_DELETEDATA,
-                MISSION_CHANGEACADEMIC,
-                MISSION_CHANGECRIMINAL,
-                MISSION_CHANGESOCIAL,
-                MISSION_CHANGEMEDICAL,
-            ]
-        )
+    db_ip = db_map[m_type]
+    db = state.computers.get(db_ip)
+    if not db or not db.recordbank: return None
+    
+    record = rng.choice(db.recordbank)
+    field_options = record_fields.get(m_type, [])
+    if not field_options: return None
+    
+    field_name, old_val, new_val = rng.choice(field_options)
+    difficulty = max(1, int(db.hack_difficulty / 20))
+    payment = int(difficulty * rng.randint(500, 1500))
 
-        employer = generate_company_name(rng)
+    descriptions = {
+        MISSION_CHANGEACADEMIC: f"Change {record.name}'s {field_name} from '{old_val}' to '{new_val}'.",
+        MISSION_CHANGECRIMINAL: f"Add '{new_val}' to {record.name}'s criminal record.",
+        MISSION_CHANGESOCIAL: f"Set {record.name}'s {field_name} to '{new_val}'.",
+        MISSION_CHANGEMEDICAL: f"Change {record.name}'s {field_name} to '{new_val}'."
+    }
 
-        if mission_type in database_map:
-            # Record mission: pick a person from the appropriate database
-            db_ip = database_map[mission_type]
-            db = state.computers.get(db_ip)
+    return Mission(
+        id=state.next_mission_id, mission_type=m_type, description=descriptions[m_type],
+        employer_name=employer, payment=payment, original_payment=payment, negotiated_payment=payment,
+        difficulty=difficulty, min_rating=max(0, difficulty - 2),
+        target_computer_ip=db_ip, completion_a=db_ip, completion_b=record.name,
+        completion_c=field_name, completion_d=new_val, completion_e=new_val,
+        created_at_tick=state.clock.tick_count,
+        due_at_tick=state.clock.tick_count + rng.randint(2000, 8000)
+    )
 
-            if not db or not db.recordbank:
-                # Fall back to steal file if no database records available
-                target = rng.choice(target_computers)
-                mission_type = MISSION_STEALFILE
-            else:
-                record = rng.choice(db.recordbank)
-                field_options = record_fields.get(mission_type, [])
-                if not field_options:
-                    # Should not happen, but fall back
-                    target = rng.choice(target_computers)
-                    mission_type = MISSION_STEALFILE
-                    # fall through to normal target selection
-                else:
-                    field_name, old_val, new_val = rng.choice(field_options)
-                    difficulty = max(1, int(db.hack_difficulty / 20))
-                    min_rating = max(0, difficulty - 2)
-                    payment = int(difficulty * rng.randint(500, 1500))
 
-                    # Build description
-                    if mission_type == MISSION_CHANGEACADEMIC:
-                        desc = f"Change {record.name}'s {field_name} from '{old_val}' to '{new_val}'."
-                    elif mission_type == MISSION_CHANGECRIMINAL:
-                        desc = f"Add '{new_val}' to {record.name}'s criminal record."
-                    elif mission_type == MISSION_CHANGESOCIAL:
-                        desc = f"Set {record.name}'s {field_name} to '{new_val}'."
-                    else:  # MEDICAL
-                        desc = f"Change {record.name}'s {field_name} to '{new_val}'."
+def _generate_file_mission(state: GameState, rng: random.Random, m_type: int, employer: str, target_computers: list) -> Mission | None:
+    """Helper for file-based mission generation."""
+    if not target_computers: return None
+    target = rng.choice(target_computers)
+    difficulty = max(1, int(target.hack_difficulty / 5))
+    payment = int(difficulty * rng.randint(500, 1500))
 
-                    mission = Mission(
-                        id=state.next_mission_id,
-                        mission_type=mission_type,
-                        description=desc,
-                        employer_name=employer,
-                        payment=payment,
-                        original_payment=payment,
-                        negotiated_payment=payment,
-                        is_negotiated=False,
-                        difficulty=difficulty,
-                        min_rating=min_rating,
-                        target_computer_ip=db_ip,
-                        completion_a=db_ip,
-                        completion_b=record.name,
-                        completion_c=field_name,
-                        completion_d=new_val,
-                        completion_e=new_val,
-                        created_at_tick=state.clock.tick_count,
-                        due_at_tick=state.clock.tick_count + rng.randint(2000, 8000),
-                    )
-                    state.next_mission_id += 1
-                    state.missions.append(mission)
-                    generated.append(mission)
-                    continue
+    if m_type == MISSION_STEALFILE:
+        if not target.files: target.files.append(DataFile(filename="secret_research.dat", size=5))
+        filename = rng.choice(target.files).filename
+        desc = f"Steal the file '{filename}' from {target.company_name}'s servers at {target.ip}."
+        comp_b = filename
+    elif m_type == MISSION_DELETEDATA:
+        desc = f"Delete all data files on {target.company_name}'s system at {target.ip}."
+        comp_b = "ALL_FILES"
+    else:
+        desc = MISSION_DESCRIPTIONS.get(m_type, "Complete a hacking task.")
+        comp_b = None
 
-        # Non-record mission: pick a target computer
-        target = rng.choice(target_computers)
-        difficulty = max(1, int(target.hack_difficulty / 5))
-        min_rating = max(0, difficulty - 2)
-        payment = int(difficulty * rng.randint(500, 1500))
-
-        # Completion criteria setup
-        completion_a = target.ip
-        completion_b = None
-
-        if mission_type == MISSION_STEALFILE:
-            # Pick a target file or create one if none exists
-            if not target.files:
-                target.files.append(DataFile(filename="secret_research.dat", size=5))
-            target_file = rng.choice(target.files)
-            completion_b = target_file.filename
-            description = f"Steal the file '{completion_b}' from {target.company_name}'s servers at {target.ip}."
-        elif mission_type == MISSION_DELETEDATA:
-            completion_b = "ALL_FILES"
-            description = f"Delete all data files on {target.company_name}'s system at {target.ip}."
-        else:
-            description = MISSION_DESCRIPTIONS.get(
-                mission_type, "Complete a hacking task."
-            )
-
-        mission = Mission(
-            id=state.next_mission_id,
-            mission_type=mission_type,
-            description=description,
-            employer_name=employer,
-            payment=payment,
-            original_payment=payment,
-            negotiated_payment=payment,
-            is_negotiated=False,
-            difficulty=difficulty,
-            min_rating=min_rating,
-            target_computer_ip=target.ip,
-            completion_a=completion_a,
-            completion_b=completion_b,
-            created_at_tick=state.clock.tick_count,
-            due_at_tick=state.clock.tick_count + rng.randint(2000, 8000),
-        )
-        state.next_mission_id += 1
-        state.missions.append(mission)
-        generated.append(mission)
+    return Mission(
+        id=state.next_mission_id, mission_type=m_type, description=desc,
+        employer_name=employer, payment=payment, original_payment=payment, negotiated_payment=payment,
+        difficulty=difficulty, min_rating=max(0, difficulty - 2),
+        target_computer_ip=target.ip, completion_a=target.ip, completion_b=comp_b,
+        created_at_tick=state.clock.tick_count,
+        due_at_tick=state.clock.tick_count + rng.randint(2000, 8000)
+    )
 
     return generated
 
