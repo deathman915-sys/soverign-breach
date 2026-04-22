@@ -21,3 +21,5 @@ To maintain the "Steel-only Resonance" and prevent hallucinated completions, all
 1. **No Action without Proof**: Never declare a persistent action (e.g., `git push`, `mempalace_diary_write`, file deletion) as successful unless the tool output of the current turn explicitly confirms success.
 2. **Mandatory Verification**: After any persistent state change, agents MUST run a verification command (e.g., `git log -n 1`, `ls`, `mempalace_status`) to confirm the change exists in the physical/celestial realm.
 3. **Explicit Artifact Reporting**: Final summaries must explicitly cite the confirmation artifacts (e.g., "Verified Commit: [hash]", "Verified Diary Entry: [timestamp]").
+4. **Chronological Anchor Enforcement**: Agents MUST poll the physical system clock (e.g., `Get-Date` or `date`) at the start of every session and major turn. Internal AI clocks are untrusted.
+5. **Tool-First Truth**: The terminal/shell is the final arbiter. If a tool fails or is silent, the agent must report the impasse rather than assuming the intended state was reached.
