@@ -1,0 +1,38 @@
+[project]
+name = "sovereign-breach"
+version = "0.6.0"
+description = "High-fidelity hacking simulation bridging Uplink and Onlink legacy."
+requires-python = ">=3.12"
+authors = [
+    { name = "Architect" }
+]
+
+[tool.ruff]
+# Target Python 3.12
+target-version = "py312"
+line-length = 120
+exclude = [
+    "legacy_qt",
+    "__pycache__",
+    ".venv",
+    "web",
+    "prototypes"
+]
+
+[tool.ruff.lint]
+# Enable Pyflakes (F) and Errors (E) by default
+# Also add complexity (C90), warnings (W), and isort (I)
+select = ["E", "F", "W", "C90", "I"]
+ignore = ["E501", "C901"] # Ignore line too long and complexity
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.mccabe]
+# Flag errors for functions with a complexity > 20
+max-complexity = 20
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-q --tb=short"

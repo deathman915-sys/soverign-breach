@@ -703,27 +703,105 @@ function renderLogScreen(el, s) {
     el.innerHTML = `
         <div style="padding:20px; display:flex; flex-direction:column; align-items:center;">
             <div style="width:100%; max-width:800px;">
-                <div style="color:var(--yellow); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #111; padding-bottom:5px;">ACCESS LOGS</div>
-                ${s.logs.map(log_entry => `<div style="display:flex; justify-content:space-between; font-family:monospace; font-size:9px; border-bottom:1px solid #111; padding:6px 0;"><span style="color:var(--red);">${log_entry.subject}</span><span style="color:var(--cyan); cursor:pointer;" onclick="interactWithIP('${log_entry.from}')">${log_entry.from}</span><span style="color:var(--text-dim);">${log_entry.time}</span></div>`).join('') || '<div style="color:var(--text-dim); text-align:center; padding:20px;">No entries found.</div>'}
+                <div style="color:var(--yellow); font-weight:bold; margin-bottom:15px; font-size:10px; letter-spacing:1px; border-bottom:1px solid #111; padding-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>ACCESS LOGS</span>
+                    <span style="font-size:8px; color:var(--text-dim);">${s.logs.length} ENTRIES</span>
+                </div>
+                ${s.logs.map((log_entry, i) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:9px; border-bottom:1px solid #111; padding:8px 0; background:rgba(0,0,0,0.2);">
+                        <div style="flex:1; display:grid; grid-template-columns: 120px 1fr 120px; gap:10px;">
+                            <span style="color:var(--text-dim);">${log_entry.time}</span>
+                            <span style="color:var(--red); font-weight:bold;">${log_entry.subject}</span>
+                            <span style="color:var(--cyan); cursor:pointer; text-align:right;" onclick="interactWithIP('${log_entry.from}')">${log_entry.from}</span>
+                        </div>
+                        <div style="margin-left:15px; display:flex; gap:5px;">
+                            <button class="menu-btn" style="font-size:7px; padding:2px 4px;" onclick="modifyLogPrompt('${log_entry.from}', ${i})">MOD</button>
+                            <button class="menu-btn" style="font-size:7px; padding:2px 4px; background:#300; border-color:#500;" onclick="recoverLog(${i})">REC</button>
+                        </div>
+                    </div>`).join('') || '<div style="color:var(--text-dim); text-align:center; padding:20px;">No entries found.</div>'}
             </div>
         </div>`; 
+}
+
+async function modifyLogPrompt(from, idx) {
+    const newIp = prompt("New Source IP:", from);
+    const newSub = prompt("New Subject:", "Connection closed");
+    if (newIp && newSub) {
+        try {
+            const res = await eel.modify_log(currentRemoteIp, idx, newIp, newSub)();
+            if (res.success) { showNotification("Log entry altered", "info"); refreshRemote(); }
+            else showNotification("Failed to alter log", "critical");
+        } catch(e) {}
+    }
+}
+
+async function recoverLog(idx) {
+    try {
+        const res = await eel.recover_log(currentRemoteIp, idx)();
+        if (res.success) { showNotification("Log entry recovered", "info"); refreshRemote(); }
+        else showNotification("Recovery failed", "critical");
+    } catch(e) {}
 }
 function renderRecordScreen(el, s, title, theme) { 
+    // Specialized Record Database UI (Phase 27)
     const records = s.recordbank || []; 
+    window._recordData = records; // Store for JS access
+    
     el.innerHTML = `
-        <div style="padding:15px; display:grid; grid-template-columns: 240px 1fr; gap:15px; height:100%;">
-            <div style="border-right:1px solid #111; overflow-y:auto; background:rgba(0,0,0,0.2); padding-right:10px;">
-                <div style="color:var(--${theme}); font-weight:bold; margin-bottom:10px; font-size:10px; letter-spacing:1px;">${title} DATABASE</div>
-                ${records.map((r, i) => `<div class="user-name" style="padding:6px 8px; border-bottom:1px solid #111; cursor:pointer; font-size:11px;" onclick="viewRecord(${i}, '${theme}')">${r.name.toUpperCase()}</div>`).join('')}
+        <div style="padding:15px; display:grid; grid-template-columns: 240px 1fr; gap:15px; height:100%; background:rgba(0,0,0,0.4);">
+            <div style="border-right:1px solid #222; overflow-y:auto; background:rgba(0,0,0,0.2); padding-right:10px;">
+                <div style="color:var(--${theme}); font-weight:bold; margin-bottom:10px; font-size:10px; letter-spacing:1px; display:flex; justify-content:space-between;">
+                    <span>${title} DATABASE</span>
+                    <span style="font-size:8px; color:#444;">${records.length} ENTRIES</span>
+                </div>
+                ${records.map((r, i) => `
+                    <div class="record-item" style="padding:8px 10px; border-bottom:1px solid #111; cursor:pointer; font-size:11px; display:flex; align-items:center; gap:8px;" onclick="viewRecord(${i}, '${theme}')">
+                        <div style="width:4px; height:4px; border-radius:50%; background:var(--${theme});"></div>
+                        <span style="color:#ccc;">${r.name.toUpperCase()}</span>
+                    </div>`).join('')}
             </div>
-            <div id="record-detail" style="padding:20px; color:var(--text-dim); display:flex; flex-direction:column; align-items:center;">
-                <div style="margin-top:100px; color:#333; letter-spacing:2px; font-size:10px;">SELECT RECORD FOR ANALYSIS</div>
+            <div id="record-detail" style="padding:20px; color:var(--text-dim); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div style="border:1px solid #222; padding:30px; background:rgba(0,0,0,0.3); text-align:center;">
+                    <div style="color:#333; letter-spacing:3px; font-size:12px; font-weight:bold; margin-bottom:10px;">SECURE ACCESS REQUIRED</div>
+                    <div style="color:#111; font-size:9px;">SELECT DATASET FOR DECRYPTION AND ANALYSIS</div>
+                </div>
             </div>
         </div>`; 
 }
+
 function viewRecord(idx, theme) {
-    const records = window._recordData || [], r = records[idx], detail = document.getElementById('record-detail'); if (!r || !detail) return;
-    detail.innerHTML = `<div style="display:flex; gap:15px; border-bottom:1px solid #111; padding-bottom:15px; margin-bottom:15px;"><div style="width:100px; height:120px; border:2px solid var(--${theme}); overflow:hidden;"><img src="https://i.pravatar.cc/150?img=${r.photo_index || 1}" style="width:100%; height:100%; object-fit:cover; filter:grayscale(100%);" /></div><div><div style="color:var(--${theme}); font-size:14px; font-weight:bold;">${r.name.toUpperCase()}</div></div></div><div style="display:flex; flex-direction:column; gap:8px;">${Object.entries(r.fields).map(([k,v]) => `<div style="display:flex; align-items:center; gap:10px;"><div style="min-width:120px;"><div style="color:var(--text-dim); text-transform:uppercase; font-size:8px;">${k}</div></div><div style="flex:1; color:#ccc; font-size:10px; background:#050505; padding:4px 6px; border:1px solid #222;">${v}</div><button class="menu-btn" style="font-size:8px; padding:2px 6px; white-space:nowrap;" onclick="alterField('${r.name}', '${k}', '${theme}')">ALTER</button></div>`).join('')}</div>`;
+    const records = window._recordData || [], r = records[idx], detail = document.getElementById('record-detail'); 
+    if (!r || !detail) return;
+    
+    // UI Elevate: Professional Dossier View
+    detail.style.justifyContent = "flex-start";
+    detail.style.alignItems = "stretch";
+    
+    const fields = r.fields || {};
+    detail.innerHTML = `
+        <div style="display:flex; gap:20px; border-bottom:1px solid #222; padding-bottom:20px; margin-bottom:20px;">
+            <div style="width:120px; height:140px; border:2px solid var(--${theme}); background:#000; overflow:hidden; box-shadow:0 0 15px rgba(0,0,0,0.5);">
+                <img src="https://i.pravatar.cc/150?u=${r.name}" style="width:100%; height:100%; object-fit:cover; filter:grayscale(100%) contrast(120%);" />
+            </div>
+            <div style="flex:1;">
+                <div style="color:var(--${theme}); font-size:18px; font-weight:bold; letter-spacing:1px;">${r.name.toUpperCase()}</div>
+                <div style="color:var(--text-dim); font-size:9px; margin-top:5px; font-family:monospace;">RECORD_ID: ${btoa(r.name).substring(0,12)}</div>
+                <div style="margin-top:15px; display:flex; gap:10px;">
+                    <button class="menu-btn" style="font-size:9px; padding:4px 10px;" onclick="showNotification('Record Exported to local buffer', 'info')">EXPORT</button>
+                    <button class="menu-btn" style="font-size:9px; padding:4px 10px; background:#300; border-color:#500;" onclick="showNotification('Deletion requires Admin credentials', 'critical')">DELETE</button>
+                </div>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; overflow-y:auto; padding-right:5px;">
+            ${Object.entries(fields).map(([k,v]) => `
+                <div style="background:rgba(0,0,0,0.3); border:1px solid #111; padding:8px; border-left:2px solid #222;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="color:var(--text-dim); font-size:8px; text-transform:uppercase;">${k.replace('_',' ')}</span>
+                        <button class="menu-btn" style="font-size:7px; padding:1px 4px;" onclick="alterField('${r.name}', '${k}', '${theme}')">ALTER</button>
+                    </div>
+                    <div style="color:#fff; font-size:11px; font-family:monospace; word-break:break-all;">${v}</div>
+                </div>`).join('')}
+        </div>`;
 }
 
 function alterField(recordName, fieldName, theme) {
@@ -747,17 +825,68 @@ function renderHardware(el, data) {
     const ramPct = ((ramUsed / ramTotal) * 100).toFixed(1);
     const storageUsed = (data.storage_used || 0), storageTotal = (data.storage_gq || 24);
     const storagePct = ((storageUsed / storageTotal) * 100).toFixed(1);
+    
+    // Thermal Color Logic
+    let heatColor = "var(--green)";
+    if (data.heat > 60) heatColor = "var(--orange)";
+    if (data.heat > 80) heatColor = "var(--red)";
 
-    el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%;"><div style="border-right:1px solid #111;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">${data.name || 'GATEWAY'}</div>${data.is_melted ? '<div style="color:var(--red); font-weight:bold;">MELTDOWN</div>' : `
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${data.heat.toFixed(1)}°C</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${heatPct}%; height:100%; background:var(--orange);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER: ${data.power_draw.toFixed(1)}W</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">ACTIVE RAM: ${ramUsed}/${ramTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${ramPct}%; height:100%; background:var(--cyan);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">VFS STORAGE: ${storageUsed}/${storageTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${storagePct}%; height:100%; background:var(--p-blue);"></div></div>
-        <div style="font-size:9px; color:var(--yellow); margin-bottom:4px; margin-top:10px;">VFS FRAGMENTATION</div><div style="display:grid; grid-template-columns: repeat(8,1fr); gap:1px; background:#050505; padding:2px;">${vfsMap.map(o => `<div style="height:8px; background:${o ? 'var(--p-blue)' : '#111'};"></div>`).join('')}</div>`}</div>
-        <div><div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">PROCESSOR STACK</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:15px;">${data.cpus ? data.cpus.map(c => `<div style="border:1px solid #222; padding:4px; background:rgba(0,0,0,0.4);"><div style="color:#fff; font-size:9px;">SLOT ${c.id}</div><div style="color:var(--cyan); font-size:10px; font-weight:bold;">${c.speed}GHz</div></div>`).join('') : ''}</div>
-        <div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">ACTIVE PROCESSES</div>${(tasks.length > 0 ? tasks : [{tool: 'System Idle', progress: 0}]).map(t => `<div style="padding:4px; font-size:9px; display:flex; justify-content:space-between;"><span style="color:#fff;">${t.tool || t.tool_name || '?'}</span><span style="color:var(--orange);">${((t.progress || 0) * 100).toFixed(0)}%</span></div>`).join('')}</div></div>`;
+    el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%; overflow-y:auto;"><div style="border-right:1px solid #111; padding-right:10px;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px; display:flex; justify-content:space-between;"><span>${data.name || 'GATEWAY'}</span><span style="font-size:8px; color:#555;">v2.1</span></div>${data.is_melted ? '<div style="color:var(--red); font-weight:bold; text-align:center; padding:20px; border:1px solid var(--red); background:rgba(255,0,0,0.1);">CRITICAL HARDWARE FAILURE: MELTDOWN</div>' : `
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${data.heat.toFixed(1)}°C / ${data.max_heat.toFixed(0)}°C</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${heatPct}%; height:100%; background:${heatColor}; transition: width 0.3s, background 0.3s;"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER LOAD: ${data.power_draw.toFixed(1)}W / ${data.psu_capacity.toFixed(0)}W</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">ACTIVE RAM: ${ramUsed}/${ramTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${ramPct}%; height:100%; background:var(--cyan);"></div></div>
+        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">VFS STORAGE: ${storageUsed}/${storageTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${storagePct}%; height:100%; background:var(--p-blue);"></div></div>
+        
+        <div style="color:var(--yellow); font-size:9px; font-weight:bold; margin-top:15px; margin-bottom:5px; border-bottom:1px solid #222;">SYSTEM MAINTENANCE</div>
+        <button class="menu-btn" style="width:100%; font-size:9px; padding:4px; margin-bottom:5px;" onclick="defragVFS()">DEFRAGMENT VFS</button>
+        <button class="menu-btn" style="width:100%; font-size:9px; padding:4px; color:var(--red); border-color:var(--red);" onclick="nukeGateway()">GATEWAY NUKE</button>
+
+        <div style="font-size:9px; color:var(--yellow); margin-bottom:4px; margin-top:15px;">PHYSICAL VFS MAP</div><div style="display:grid; grid-template-columns: repeat(8,1fr); gap:1px; background:#050505; padding:2px; border:1px solid #111;">${vfsMap.map(o => `<div style="height:8px; background:${o ? 'var(--p-blue)' : '#111'}; opacity:${o?1:0.3};"></div>`).join('')}</div>`}</div>
+        
+        <div><div style="color:var(--yellow); font-weight:bold; margin-bottom:8px; display:flex; justify-content:space-between;"><span>PROCESSOR STACK</span><span style="font-size:8px; color:var(--text-dim);">BUS: ${(data.storage_overclock*100).toFixed(0)}MHz</span></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:15px;">${data.cpus ? data.cpus.map(c => `
+            <div style="border:1px solid #222; padding:6px; background:rgba(0,0,0,0.4); border-left:2px solid ${c.health < 50 ? 'var(--red)' : 'var(--cyan)'};">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="color:#fff; font-size:8px; font-weight:bold;">CORE ${c.id}</span>
+                    <span style="color:var(--text-dim); font-size:8px;">${c.health.toFixed(0)}% HP</span>
+                </div>
+                <div style="color:var(--cyan); font-size:12px; font-weight:bold; margin-bottom:5px;">${c.speed.toFixed(2)}GHz</div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="range" min="100" max="500" value="${(c.overclock || 1.0) * 100}" step="10" style="flex:1; height:2px;" onchange="setCPUOC(${c.id}, this.value)">
+                    <span style="font-size:8px; color:var(--yellow); width:25px; text-align:right;">${(c.overclock*100).toFixed(0)}%</span>
+                </div>
+            </div>`).join('') : ''}</div>
+        
+        <div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">MEMORY OVERCLOCK</div>
+        <div style="border:1px solid #222; padding:10px; background:rgba(0,170,255,0.05); margin-bottom:15px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <input type="range" min="100" max="400" value="${(data.ram_overclock || 1.0) * 100}" step="10" style="flex:1;" onchange="setRAMOC(this.value)">
+                <span style="color:var(--cyan); font-weight:bold; font-size:12px;">${(data.ram_overclock*100).toFixed(0)}MHz</span>
+            </div>
+            <div style="font-size:8px; color:var(--text-dim); margin-top:5px;">WARNING: High clocks increase thermal load and component degradation.</div>
+        </div>
+
+        <div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">ACTIVE PROCESSES</div>
+        <div style="border:1px solid #222; background:rgba(0,0,0,0.2); min-height:100px;">
+            ${(tasks.length > 0 ? tasks : [{tool: 'System Idle', progress: 0}]).map(t => `
+            <div style="padding:6px; font-size:9px; border-bottom:1px solid #111; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="color:#fff; font-weight:bold;">${t.tool || t.tool_name || '?'}</span>
+                    <span style="color:var(--text-dim); font-size:7px;">TARGET: ${t.target_ip || 'LOCAL'}</span>
+                </div>
+                <div style="text-align:right;">
+                    <div style="color:var(--orange); font-weight:bold;">${((t.progress || 0) * 100).toFixed(0)}%</div>
+                    <div style="background:#111; width:60px; height:2px; margin-top:2px;"><div style="width:${(t.progress*100)}%; height:100%; background:var(--orange);"></div></div>
+                </div>
+            </div>`).join('')}
+        </div></div></div>`;
 }
+
+async function setCPUOC(id, val) { try { await eel.set_cpu_overclock(id, parseInt(val))(); refreshApp('hardware'); } catch(e) {} }
+async function setRAMOC(val) { try { await eel.set_ram_overclock(parseInt(val))(); refreshApp('hardware'); } catch(e) {} }
+async function defragVFS() { try { const res = await eel.defrag_vfs()(); if (res.success) { showNotification("VFS Optimized", "info"); refreshApp('hardware'); } else showNotification("Defrag Failed", "critical"); } catch(e) {} }
+async function nukeGateway() { if (!confirm("CRITICAL WARNING: This will permanently destroy all data and melt your gateway. Continue?")) return; if (!confirm("ARE YOU ABSOLUTELY SURE?")) return; try { await eel.gateway_nuke()(); } catch(e) {} }
+
 
 function renderRankings(el, data) { const r = data.rankings || []; el.innerHTML = `<div style="padding:15px; height:100%; overflow-y:auto;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:15px;">AGENT RANKINGS</div>${r.map((a, i) => `<div style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid #111; ${a.is_player?'background:rgba(0,170,255,0.1);':''}"> <span style="color:${a.is_player?'var(--cyan)':'#888'}">${i+1}. ${a.name}</span><span style="color:var(--green);">${a.rating}</span></div>`).join('')}</div>`; }
 function renderMessages(el, data) { const m = data.messages || []; el.innerHTML = `<div style="padding:15px; height:100%; overflow-y:auto;">${m.map(msg => `<div style="border:1px solid #222; padding:10px; margin-bottom:5px; cursor:pointer;"><div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${msg.from}</span><span style="color:var(--text-dim);">Tick ${msg.created_at_tick}</span></div><div style="color:var(--yellow);">${msg.subject}</div></div>`).join('') || '<div style="color:var(--text-dim); text-align:center;">Inbox empty</div>'}</div>`; }
