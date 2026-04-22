@@ -449,6 +449,15 @@ SOFTWARE_CATALOG = [
         "is_exe": True,
         "exe_name": "memory_banks.exe",
     },
+    {
+        "name": "Tutorial",
+        "version": 1,
+        "size": 1,
+        "type": SoftwareType.OTHER,
+        "price": 0,
+        "is_exe": True,
+        "exe_name": "tutorial.exe",
+    },
 ]
 
 

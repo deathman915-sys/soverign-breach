@@ -352,6 +352,18 @@ def modify_log(ip: str, log_index: int, new_from_ip: str):
     return get_rc().modify_log(ip, log_index, new_from_ip)
 
 @eel.expose
+def recover_log(ip: str, log_index: int):
+    comp = engine.state.computers.get(ip)
+    if not comp:
+        return {"success": False, "error": "Computer not found"}
+    return {"success": comp.recover_log(log_index)}
+
+@eel.expose
+def gateway_nuke():
+    from core.gateway_nuke import nuke_gateway
+    return nuke_gateway(engine.state)
+
+@eel.expose
 def execute_hack(ip: str, tool_name: str, target_type: str, target_id: str):
     return get_rc().execute_hack(ip, tool_name, target_type, target_id)
 
@@ -561,11 +573,7 @@ def on_tick(tick_count):
         return
     state = engine.state
     
-    # High-Fidelity Throttling: Only push HUD every 4 ticks (~5Hz) 
-    # unless a trace is active (requires 20Hz for smooth progress)
-    if tick_count % 4 != 0 and not state.connection.trace_active:
-        return
-
+    # High-Fidelity Sync: Push HUD every tick for smooth clock and trace progress
     try:
         hours = (tick_count // 3600) % 24
         minutes = (tick_count // 60) % 60

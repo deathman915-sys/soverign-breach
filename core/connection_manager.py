@@ -60,6 +60,12 @@ def connect(
         nodes=nodes,
     )
 
+    # IP Auto-Discovery: Permanently add target to known_ips
+    if target_ip not in state.player.known_ips:
+        state.player.known_ips.append(target_ip)
+        from core import persistence
+        persistence.save_profile(state)
+
     # --- MVP Heist: Multi-hop log chain ---
     # Log 1: Target Server logs the previous hop (the last Proxy)
     previous_hop_ip = nodes[-2].ip if len(nodes) > 1 else state.player.localhost_ip

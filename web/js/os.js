@@ -622,6 +622,10 @@ function updateMapVisuals() {
 async function initMapApp(data) {
     try { currentBounceChain = await eel.get_bounce_chain()(); } catch(e) { currentBounceChain = []; }
     lastMapNodes = data.nodes || []; mapSelectedNode = null;
+    
+    // Task 1 Fix: Populate the side list immediately
+    searchMap('');
+
     try {
         const container = document.getElementById('map-app-container'); if (!container) return;
         mapInstance = L.map('map-app-container', { center:[30,0], zoom:2, attributionControl:false, maxBounds: [[-85, -280], [85, 280]], maxBoundsViscosity: 1.0 });
@@ -834,7 +838,6 @@ async function renderHardware(el, data) {
     if (data.heat > 60) heatColor = "var(--orange)";
     if (data.heat > 80) heatColor = "var(--red)";
 
-<<<<<<< HEAD
     el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%; overflow-y:auto;"><div style="border-right:1px solid #111; padding-right:10px;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px; display:flex; justify-content:space-between;"><span>${data.name || 'GATEWAY'}</span><span style="font-size:8px; color:#555;">v2.1</span></div>${data.is_melted ? '<div style="color:var(--red); font-weight:bold; text-align:center; padding:20px; border:1px solid var(--red); background:rgba(255,0,0,0.1);">CRITICAL HARDWARE FAILURE: MELTDOWN</div>' : `
         <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${data.heat.toFixed(1)}°C / ${data.max_heat.toFixed(0)}°C</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${heatPct}%; height:100%; background:${heatColor}; transition: width 0.3s, background 0.3s;"></div></div>
         <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER LOAD: ${data.power_draw.toFixed(1)}W / ${data.psu_capacity.toFixed(0)}W</div><div style="background:#111; height:4px; margin-bottom:8px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
@@ -884,17 +887,6 @@ async function renderHardware(el, data) {
                 </div>
             </div>`).join('')}
         </div></div></div>`;
-=======
-    el.innerHTML = `<div style="padding:15px; display:grid; grid-template-columns: 200px 1fr; gap:15px; height:100%;"><div style="border-right:1px solid #111;"><div style="color:var(--cyan); font-weight:bold; margin-bottom:10px;">${data.name || 'GATEWAY'}</div>${gw.is_melted ? '<div style="color:var(--red); font-weight:bold;">MELTDOWN</div>' : `
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">THERMALS: ${gw.heat.toFixed(1)}°C</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${heatPct}%; height:100%; background:var(--orange);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">POWER: ${gw.power_draw.toFixed(1)}W</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${powerPct}%; height:100%; background:var(--green);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">ACTIVE RAM: ${ramUsed}/${ramTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${ramPct}%; height:100%; background:var(--cyan);"></div></div>
-        <div style="font-size:8px; color:var(--text-dim); margin-bottom:2px;">VFS STORAGE: ${storageUsed}/${storageTotal}GQ</div><div style="background:#111; height:4px; margin-bottom:6px;"><div style="width:${storagePct}%; height:100%; background:var(--p-blue);"></div></div>
-        <div style="font-size:9px; color:var(--yellow); margin-bottom:4px; margin-top:10px;">VFS FRAGMENTATION</div><div style="display:grid; grid-template-columns: repeat(8,1fr); gap:1px; background:#050505; padding:2px;">${vfsMap.map(o => `<div style="height:8px; background:${o ? 'var(--p-blue)' : '#111'};"></div>`).join('')}</div>`}</div>
-        <div><div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">PROCESSOR STACK</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:15px;">${data.cpus ? data.cpus.map(c => `<div style="border:1px solid #222; padding:4px; background:rgba(0,0,0,0.4);"><div style="color:#fff; font-size:9px;">SLOT ${c.id}</div><div style="color:var(--cyan); font-size:10px; font-weight:bold;">${c.speed}GHz</div></div>`).join('') : ''}</div>
-        <div style="color:var(--yellow); font-weight:bold; margin-bottom:8px;">ACTIVE PROCESSES</div>${(tasks.length > 0 ? tasks : [{tool: 'System Idle', progress: 0}]).map(t => `<div style="padding:4px; font-size:9px; display:flex; justify-content:space-between;"><span style="color:#fff;">${t.tool || t.tool_name || '?'}</span><span style="color:var(--orange);">${((t.progress || 0) * 100).toFixed(0)}%</span></div>`).join('')}</div></div>`;
->>>>>>> origin/fix-ui-wiring-and-tests-10022394234309954989
 }
 
 async function setCPUOC(id, val) { try { await eel.set_cpu_overclock(id, parseInt(val))(); refreshApp('hardware'); } catch(e) {} }
