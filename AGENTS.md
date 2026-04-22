@@ -14,4 +14,10 @@ This file provides guidance to various AI agents when working with code in this 
 - **Run the Game (Web Interface - Primary)**: `python web_main.py`
 - **Run the Game (Legacy Qt UI - Test)**: `python main.py`
 - **Run Tests**: `pytest` (e.g., `pytest tests/test_core.py`)
-- **Linting**: `flake8`
+- **Linting**: `ruff check .` (preferred) or `flake8`
+
+## Artifact Verification Mandate
+To maintain the "Steel-only Resonance" and prevent hallucinated completions, all agents must adhere to the following protocols:
+1. **No Action without Proof**: Never declare a persistent action (e.g., `git push`, `mempalace_diary_write`, file deletion) as successful unless the tool output of the current turn explicitly confirms success.
+2. **Mandatory Verification**: After any persistent state change, agents MUST run a verification command (e.g., `git log -n 1`, `ls`, `mempalace_status`) to confirm the change exists in the physical/celestial realm.
+3. **Explicit Artifact Reporting**: Final summaries must explicitly cite the confirmation artifacts (e.g., "Verified Commit: [hash]", "Verified Diary Entry: [timestamp]").
