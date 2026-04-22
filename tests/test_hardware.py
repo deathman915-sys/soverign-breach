@@ -51,6 +51,18 @@ class TestOverclocking:
         HardwareEngine.set_ram_overclock(state, 1.5)
         assert state.gateway.ram_overclock == 1.5
 
+    def test_storage_overclock(self, state):
+        HardwareEngine.set_storage_overclock(state, 1.5)
+        assert state.gateway.storage_overclock == 1.5
+
+    def test_storage_overclock_lower_bound(self, state):
+        HardwareEngine.set_storage_overclock(state, 0.1)
+        assert state.gateway.storage_overclock == 0.5
+
+    def test_storage_overclock_upper_bound(self, state):
+        HardwareEngine.set_storage_overclock(state, 5.0)
+        assert state.gateway.storage_overclock == 3.0
+
 
 class TestMeltdown:
     def test_forced_meltdown(self, state):
