@@ -1,5 +1,9 @@
 # Sovereign Breach (formerly Onlink-Clone)
 
+**Made by a human using AI tools to try and build an idea.**
+
+---
+
 **Sovereign Breach** is a high-fidelity, open-source hacking simulation that bridges the technical legacy of *Uplink* and *Onlink* into a modern Python/Web-hybrid architecture. 
 
 Built on a resilient **Eel/JavaScript** core with a multi-threaded **Python 3.12** simulation engine, it offers a living network simulation where nodes repair themselves, authorities track your trail through forensic backups, and every credit stolen carries a unique cryptographic signature.
