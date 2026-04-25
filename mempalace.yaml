@@ -1,28 +1,54 @@
-wing: sovereign-breach
+wing: soverign_breach
 rooms:
-- name: core
-  description: Core game engine modules
+- name: profiles
+  description: Files from profiles/
   keywords:
-  - engine
-  - game
-  - simulation
+  - profiles
+  - profiles
+- name: testing
+  description: Files from tests/
+  keywords:
+  - testing
+  - tests
+- name: core
+  description: Files from core/
+  keywords:
+  - core
+  - core
+- name: sovereign_breach.egg_info
+  description: Files from sovereign_breach.egg-info/
+  keywords:
+  - sovereign_breach.egg_info
+  - sovereign_breach.egg-info
+- name: legacy_qt
+  description: Files from legacy_qt/
+  keywords:
+  - legacy_qt
+  - legacy_qt
+- name: prototypes
+  description: Files from prototypes/
+  keywords:
+  - prototypes
+  - prototypes
 - name: web
-  description: Web UI and frontend
+  description: Files from web/
   keywords:
   - web
+  - web
+- name: frontend
+ description: Files from web/js/
+ keywords:
+  - web
+  - js
   - ui
-  - frontend
-- name: docs
-  description: Development logs and documentation
-  keywords:
-  - development
-  - log
-  - documentation
-- name: tests
-  description: Test suite
-  keywords:
-  - test
-  - pytest
+  - javascript
+- name: design
+ description: Files from web/assets/ and web/css/
+ keywords:
+  - design
+  - assets
+  - css
+  - stylesheet
 - name: general
   description: Files that don't fit other rooms
   keywords: []

@@ -36,3 +36,10 @@ Thumbs.db
 
 # Temporary directory for tool outputs
 .gemini/
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
+
+# Auto-generated package metadata
+*.egg-info/

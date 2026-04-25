@@ -31,15 +31,16 @@ _TEMPLATES = {
             "Uplink Agent '{agent_name}' Apprehended in Dawn Raid",
             "Cybercriminal '{agent_name}' Apprehended",
             "Federal Bureau Arrests Notorious Hacker '{agent_name}'",
-            "'{agent_name}' Taken Into Custody After Hacking Spree",
+            "'{agent_name}' Arrested and Taken Into Custody After Hacking Spree",
         ],
         "bodies": [
             (
                 "Federal Investigation Bureau agents stormed the gateway of the "
                 "hacker known as '{agent_name}' early this morning. The suspect is "
                 "believed to have been involved in multiple unauthorized computer "
-                "intrusions over recent weeks. Equipment was confiscated and the "
-                "suspect's Uplink account has been suspended pending trial."
+                "intrusions over recent weeks and was arrested at the scene. "
+                "Equipment was confiscated and the suspect's Uplink account has "
+                "been suspended pending trial."
             ),
             (
                 "Authorities have confirmed the arrest of '{agent_name}', a "

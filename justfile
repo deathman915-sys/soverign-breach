@@ -1,10 +1,11 @@
 # justfile for Sovereign Breach (High-Fidelity Hacking Simulation)
 
-# Set the shell to PowerShell for Windows compatibility
-set shell := ["powershell.exe", "-Command"]
+# Detect OS: windows = PowerShell, linux/mac = bash
+os := if os() == "windows" { "windows" } else { "linux" }
 
-# Path to the virtual environment Python
-python := "D:/pyth/.venv/Scripts/python.exe"
+# Platform-specific settings
+shell := if os == "windows" { ["powershell.exe", "-Command"] } else { ["bash", "-c"] }
+python := if os == "windows" { "D:/pyth/.venv/Scripts/python.exe" } else { ".venv/bin/python" }
 
 # Default action: Execute a full structural and logical audit
 default: audit
