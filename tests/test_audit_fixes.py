@@ -249,13 +249,14 @@ class TestWarningStateReset:
 class TestMissionDifficultyScaling:
     def test_mission_difficulty_scales_with_server(self):
         """Missions on harder servers should have higher difficulty."""
-        from core.mission_engine import generate_missions
         from core import constants as C
+        from core.game_state import Record
+        from core.mission_engine import generate_missions
 
         state = GameState()
         # Add a record-based database to avoid empty missions if record mission is chosen
         db = Computer(ip=C.IP_GLOBALCRIMINALDATABASE, name="Criminal DB", company_name="FIB", computer_type=NodeType.INTERNAL_SRV, hack_difficulty=60)
-        db.recordbank = [{"Convictions": "None"}]
+        db.recordbank = [Record(name="TestPerson", fields={"Convictions": "None"})]
         state.computers[C.IP_GLOBALCRIMINALDATABASE] = db
 
         hard_server = Computer(

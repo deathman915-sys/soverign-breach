@@ -90,6 +90,15 @@ class GameEngine:
         # Wire up world sim events
         self.events.connect("hijack_success", self._on_hijack_success)
 
+    @property
+    def lock(self) -> threading.Lock:
+        return self._lock
+
+    def run_with_lock(self, func: Callable, *args, **kwargs):
+        """Execute a function while holding the engine lock."""
+        with self._lock:
+            return func(*args, **kwargs)
+
     def _on_hijack_success(self, manifest: TransportManifest, pmc: Company):
         """Handle the ripple effect of a successful hijack."""
         with self._lock:
@@ -195,17 +204,17 @@ class GameEngine:
             s.clock.tick_count += 1
             tc = s.clock.tick_count
 
-        self.logistics.tick(s)
+            self.logistics.tick(s)
 
-        # Modular Tick Sequence
-        if self._tick_hardware_and_tasks(s, tc):
-            return
-        if self._tick_connection_and_trace(s, tc):
-            return
-        if self._tick_legal_and_security(s, tc):
-            return
-        if self._tick_economy_and_world(s, tc):
-            return
+            # Modular Tick Sequence
+            if self._tick_hardware_and_tasks(s, tc):
+                return
+            if self._tick_connection_and_trace(s, tc):
+                return
+            if self._tick_legal_and_security(s, tc):
+                return
+            if self._tick_economy_and_world(s, tc):
+                return
 
         self.events.emit("tick_completed", tc)
 

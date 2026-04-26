@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Optional
 
+from core import constants as C
+
 
 # =========================================================================
 # Enums
@@ -646,7 +648,7 @@ class WorldState:
 class GameClock:
     tick_count: int = 0
     speed_multiplier: int = 1
-    game_date: tuple = (24, 3, 2010)
+    game_date: tuple = C.GAME_START_DATE[3:6]
 
 
 @dataclass
