@@ -351,8 +351,8 @@ def alter_record(ip: str, name: str, field: str, val: str):
     return get_rc().alter_record(ip, name, field, val)
 
 @eel.expose
-def modify_log(ip: str, log_index: int, new_from_ip: str):
-    return get_rc().modify_log(ip, log_index, new_from_ip)
+def modify_log(ip: str, log_index: int, new_from_ip: str, new_subject: str = None):
+    return get_rc().modify_log(ip, log_index, new_from_ip, new_subject)
 
 @eel.expose
 def recover_log(ip: str, log_index: int):

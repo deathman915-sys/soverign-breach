@@ -597,7 +597,7 @@ class RemoteController:
 
         return {"success": True}
 
-    def modify_log(self, ip: str, log_index: int, new_from_ip: str) -> dict:
+    def modify_log(self, ip: str, log_index: int, new_from_ip: str, new_subject: str = None) -> dict:
         """Modify a log entry's from_ip to frame another agent.
         The internal backup log remains untouched for forensic recovery.
         """
@@ -609,6 +609,8 @@ class RemoteController:
 
         old_ip = comp.logs[log_index].from_ip
         comp.logs[log_index].from_ip = new_from_ip
+        if new_subject is not None:
+            comp.logs[log_index].subject = new_subject
         # Increase suspicion — framing is suspicious behavior
         comp.logs[log_index].suspicion_level = max(comp.logs[log_index].suspicion_level, 1)
         log.info(f"LOG MODIFIED on {ip}: entry #{log_index} from_ip changed from {old_ip} to {new_from_ip}")

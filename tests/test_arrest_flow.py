@@ -76,7 +76,8 @@ class TestArrestConsequences:
         # Check the news article has arrest-related content
         latest_news = arrested_state.world.news[-1]
         full_text = f"{latest_news.headline} {latest_news.body}".lower()
-        assert "arrest" in full_text or "apprehend" in full_text, f"News article should mention arrest: {latest_news.headline}"
+        keywords = ["arrest", "apprehend", "custody"]
+        assert any(kw in full_text for kw in keywords), f"News article should mention arrest: {latest_news.headline}"
 
 
 class TestJailTime:

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sovereign Sniper - Kinetic Prototype v0.4</title>
+    <style>
+        :root {
+            --bg: #000;
+            --cyan: #00aaff;
+            --red: #ff3300;
+            --green: #00ff66;
+            --text: #88aacc;
+        }
+        body { margin: 0; background: var(--bg); color: var(--cyan); font-family: monospace; overflow: hidden; }
+        
+        #scope-container {
+            position: relative;
+            width: 100vw; height: 100vh;
+            background: #020406;
+            cursor: none;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #world {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: radial-gradient(circle at center, #0a0e14 0%, #000 100%);
+        }
+
+        #target {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 30px; height: 60px;
+            background: #111;
+            border: 1px solid #222;
+            z-index: 2;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #target-head { 
+            width: 14px; height: 14px; 
+            background: var(--red); 
+            margin: -16px 0 0 0; 
+            border-radius: 50%; 
+            border: 1px solid #fff;
+            box-shadow: 0 0 10px var(--red);
+        }
+
+        #scope-housing {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+            background: radial-gradient(circle at center, transparent 280px, #000 285px);
+        }
+
+        #data-panel {
+            position: absolute; 
+            left: 50px; top: 50%;
+            transform: translateY(-50%);
+            width: 220px; 
+            background: rgba(0,10,20,0.95);
+            border: 1px solid var(--cyan); 
+            padding: 15px;
+            font-size: 12px;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(0,170,255,0.2);
+        }
+        .stat { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #112233; padding-bottom: 2px; }
+        .val { color: #fff; font-weight: bold; }
+
+        #reticle {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 560px; height: 560px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 11;
+            border: 1px solid rgba(0,255,255,0.1);
+            border-radius: 50%;
+        }
+        .cross-h { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(0,255,255,0.8); }
+        .cross-v { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(0,255,255,0.8); }
+
+        #breath-indicator {
+            position: absolute; bottom: 40px; left: 50px;
+            width: 220px; height: 4px; background: #111;
+            z-index: 101;
+        }
+        #breath-fill { width: 100%; height: 100%; background: var(--cyan); }
+    </style>
+</head>
+<body>
+
+    <div id="scope-container">
+        <div id="world">
+            <div id="target">
+                <div id="target-head"></div>
+            </div>
+        </div>
+
+        <div id="scope-housing"></div>
+
+        <div id="reticle">
+            <div class="cross-h"></div>
+            <div class="cross-v"></div>
+        </div>
+
+        <div id="data-panel">
+            <div style="color:var(--yellow); font-size:10px; margin-bottom:10px; letter-spacing:1px;">BALLISTIC COMPUTER v0.4</div>
+            <div class="stat"><span>RANGE</span><span class="val" id="val-range">850m</span></div>
+            <div class="stat"><span>WIND</span><span class="val" id="val-wind">4.2 m/s →</span></div>
+            <div class="stat"><span>ELEVATION</span><span class="val" id="val-elev">0.00 MOA</span></div>
+            <div class="stat"><span>WINDAGE</span><span class="val" id="val-windage">0.00 MOA</span></div>
+            <div class="stat" style="border:none; margin-top:15px;"><span>CALIBER</span><span class="val">.338 LAPUA</span></div>
+        </div>
+
+        <div id="breath-indicator">
+            <div id="breath-fill"></div>
+            <div style="font-size:8px; margin-top:4px; color:var(--text);">PULSE STABILITY (SPACE TO HOLD)</div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            range: 850, windSpeed: 4.2, elevation: 0, windage: 0,
+            driftX: 0, driftY: 0,
+            viewX: 0, viewY: 0,
+            breath: 100, isHolding: false
+        };
+
+        function update() {
+            const dropMOA = (state.range / 100) * 2.1;
+            const windMOA = state.windSpeed * (state.range / 500);
+
+            // Center is screen middle
+            // Target offset = (Ballistics - Scope Zero) + Mouse Pan + Breathing
+            const finalX = (windMOA - state.windage) * 15 + state.viewX + state.driftX;
+            const finalY = (dropMOA - state.elevation) * 15 + state.viewY + state.driftY;
+
+            document.getElementById('target').style.transform = `translate(calc(-50% + ${finalX}px), calc(-50% + ${finalY}px))`;
+            
+            // HUD
+            document.getElementById('val-elev').innerText = state.elevation.toFixed(2) + ' MOA';
+            document.getElementById('val-windage').innerText = state.windage.toFixed(2) + ' MOA';
+            document.getElementById('breath-fill').style.width = state.breath + '%';
+        }
+
+        function tick() {
+            const time = Date.now() / 1000;
+            if (state.isHolding && state.breath > 0) {
+                state.breath -= 0.6;
+                if (state.breath <= 0) state.isHolding = false;
+            } else if (state.breath < 100) {
+                state.breath += 0.3;
+            }
+
+            const stability = state.isHolding ? 0.05 : 1.0;
+            state.driftX = Math.sin(time * 1.5) * 40 * stability;
+            state.driftY = Math.cos(time * 0.9) * 25 * stability;
+
+            update();
+            requestAnimationFrame(tick);
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            state.viewX = (window.innerWidth / 2 - e.clientX) * 0.6;
+            state.viewY = (window.innerHeight / 2 - e.clientY) * 0.6;
+        });
+
+        window.addEventListener('mousedown', () => {
+            const t = document.getElementById('target').getBoundingClientRect();
+            const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+            const dx = Math.abs(t.left + t.width/2 - cx), dy = Math.abs(t.top + t.height/2 - cy);
+            if (dx < 20 && dy < 30) alert("THREAT NEUTRALIZED");
+            else alert("MISS - ADVISE RE-ENGAGE");
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); state.isHolding = true; }
+            if (e.key === 'ArrowUp') state.elevation += 0.25;
+            if (e.key === 'ArrowDown') state.elevation -= 0.25;
+            if (e.key === 'ArrowLeft') state.windage -= 0.25;
+            if (e.key === 'ArrowRight') state.windage += 0.25;
+        });
+        window.addEventListener('keyup', (e) => { if (e.code === 'Space') state.isHolding = false; });
+
+        tick();
+    </script>
+</body>
+</html>

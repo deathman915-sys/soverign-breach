@@ -56,7 +56,7 @@ def test_log_manipulation_and_recovery(state):
     comp.internal_logs = [copy.deepcopy(comp.logs[0])]
 
     # Modify log
-    res = rc.modify_log("1.1.1.1", 0, "9.9.9.9")
+    res = rc.modify_log("1.1.1.1", 0, "9.9.9.9", "Connection closed")
     assert res["success"] is True
     assert comp.logs[0].from_ip == "9.9.9.9"
     assert comp.logs[0].suspicion_level >= 1
